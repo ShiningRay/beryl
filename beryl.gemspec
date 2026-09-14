@@ -2,13 +2,13 @@
 
 Gem::Specification.new do |spec|
   spec.name = 'beryl'
-  spec.version = '0.1.0'
+  spec.version = '0.2.0'
   spec.authors = ['ShiningRay']
   spec.email = ['tsowly@hotmail.com']
 
   spec.summary = '桌面式 UI 组件库（Citrine 之上）'
-  spec.description = 'Beryl：Citrine 信号内核之上的桌面式 UI 组件库——窗口框、菜单、' \
-                     'z 序、焦点与控件目录。第一个消费者是 RubyWorld。'
+  spec.description = 'Beryl：Citrine 信号内核之上的桌面式 UI 组件库——窗口框、窗口管理器、' \
+                     '菜单、z 序、任务栏与控件目录。第一个消费者是 RubyWorld。'
   spec.homepage = 'https://github.com/ShiningRay/beryl'
   spec.license = 'MIT'
   spec.required_ruby_version = '>= 2.7'
