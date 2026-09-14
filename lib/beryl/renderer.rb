@@ -98,10 +98,13 @@ module Beryl
         oh = pane[:offsetHeight]
         vw = Native(`window`)[:innerWidth]
         vh = Native(`window`)[:innerHeight]
+        moved = false   # 纯点击（未超过阈值）不算拖拽：mouseup 不回调，几何不回写
         on_move = nil
         on_up = ->(_raw2) {
           doc.removeEventListener("mousemove", on_move)
           doc.removeEventListener("mouseup", on_up)
+          next unless moved
+
           payload = Native(`({x: #{pane[:offsetLeft]}, y: #{pane[:offsetTop]}, w: #{pane[:offsetWidth]}, h: #{pane[:offsetHeight]}})`)
           node.owner.handle_event(handler, payload)
         }
@@ -109,6 +112,7 @@ module Beryl
           e2 = Native(raw2)
           dx = e2[:clientX] - sx
           dy = e2[:clientY] - sy
+          moved = true if dx.abs > 1 || dy.abs > 1
           if is_move
             left = ol + dx
             top = ot + dy

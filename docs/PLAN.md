@@ -233,3 +233,10 @@ beryl/
   `wm.frame(id)` 会对未注册窗口 raise（fail fast 设计），重渲染半途崩溃——
   旧 DOM 被拆、任务栏连带消失。渲染窗口一律以 `wm.windows.include?(id)` 为准
   （demo 的 `window(id)` 包装）；重开走 `wm.open` 回注册表（demo 菜单「新窗口」）。
+- **拖拽回写的尺寸口径**：payload 用 offsetWidth/Height（**含边框的外框尺寸**），
+  页面若按默认 content-box 渲染，回写一次大 2×边框 px——点一下标题栏窗口就
+  「呼吸」变大。页面必须 `box-sizing: border-box`（demo 已加），回写才与 CSS
+  width/Height 同口径。
+- **纯点击不算拖拽**：L1 setup_drag 带 moved 阈值（位移 >1px 才算拖），
+  mouseup 未超阈值不回调 handler——点击标题栏不再触发 place/重渲染
+  （顺带消除「点在屏幕顶缘的标题栏把窗口最大化」的误吸附路径）。
