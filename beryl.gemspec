@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 Gem::Specification.new do |spec|
-  spec.name = 'beryl'
+  # RubyGems 上 beryl 之名已被他人占用（2018 年的 Web framework），发布名用 citrine-beryl；
+  # require 名保持 'beryl'（lib/beryl.rb），消费者 gem 'citrine-beryl' + require 'beryl'
+  spec.name = 'citrine-beryl'
   spec.version = '0.2.0'
   spec.authors = ['ShiningRay']
   spec.email = ['tsowly@hotmail.com']

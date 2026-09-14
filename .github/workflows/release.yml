@@ -19,7 +19,7 @@ jobs:
       - name: 附产物到 GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          files: beryl-*.gem
+          files: citrine-beryl-*.gem
       - name: 发布到 RubyGems（需配置 RUBYGEMS_API_KEY secret）
         env:
           RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
@@ -28,7 +28,7 @@ jobs:
             mkdir -p "$HOME/.gem"
             printf '%s\n' ":rubygems_api_key: ${RUBYGEMS_API_KEY}" > "$HOME/.gem/credentials"
             chmod 0600 "$HOME/.gem/credentials"
-            gem push beryl-*.gem
+            gem push citrine-beryl-*.gem
           else
             echo "未配置 RUBYGEMS_API_KEY，跳过 gem push（产物已附在 Release 上）"
           fi
