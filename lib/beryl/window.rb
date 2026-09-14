@@ -56,7 +56,10 @@ module Beryl
         box(css_class: 'panel-head', **head_opts) do
           box(css_class: 'dot', style: { background: accent })
           label(css_class: 'title', style: { font_weight: 600 }) { title }
-          label(css_class: 'wclass') { subtitle }
+          # 弹簧：把尾部（副标题/工具/控制钮）推到右侧——不依赖副标题的 auto margin，
+          # 没有副标题时按钮也保持在右端（激活态样式更不能动布局）
+          box(style: { flex: 1 })
+          label(css_class: 'wclass') { subtitle } unless subtitle.empty?
           tools.call if tools
           render_controls
         end
