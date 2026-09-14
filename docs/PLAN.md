@@ -50,6 +50,11 @@ prop 名不得与元素 DSL 同名（如 `label`）——prop 定义的读取方
 跨渲染存活的交互态放组件内部 `state` 等于自焚（Select 下拉点开即关），
 **必须受控**（`open:`/`cursor:`/`expanded:` 传 Signal）。组件保留内部态
 回退仅用于自根挂载的独立演示场景。模型状态走消费者的 Store。
+**v0.3 补充（citrine keyed 复用已落地）**：消费者改用
+`render(组件类, **props, key:)`（或 `components` 宏）时，同层同 key 的子组件
+实例**跨重渲染存活**，内部态从此可行；但 render 暂不支持插槽 block（citrine
+S3 待办），beryl 的插槽组件（content:/tools:）仍走 `.view` 模式，**受控开合
+仍是默认推荐**。集合态优先用 ListSignal（F9）。
 
 ### F5 · 纯 CRuby 可测
 L2/L3 控件层禁止触碰 Opal/Native——用 `Citrine.render`（StringRenderer）
@@ -67,6 +72,21 @@ demo 真实踩坑）。守卫已内置（`assert_outside_effect!` fail fast）�
 ### F7 · 视图里读 Signal 的位置决定订阅边界（G-2 应用）
 虚拟滚动 List 的 `scroll_top` 必须在**内容 block 内**读取（重跑只重建行），
 若在外层读，滚动容器随整块重建、滚动位置丢失。
+
+### F8 · 组件实例必须显式 `.view` 才渲染（v0.2，RubyWorld 真实踩坑）
+`SomeWidget.new(...)` 只构造不渲染；嵌入视图必须调用 `.view`（在当前
+Effect 内 emit 节点树）。忘记调用时块返回值不是 String，子树为空——
+表现为控件"消失"或被 tos 成 `#<Beryl::...>` 文本（Method Editor 的
+Tabs 即此坑）。evidence：`render_method_area` 忘 `.view` →
+`.method-list` innerText 为 Tabs inspect。
+
+### F9 · 集合态用 ListSignal，别手写「读-改-写回」（v0.3）
+citrine 的 `Citrine.signal_list([])`（ListSignal）把集合变更本身变成触发点：
+`<< / delete / delete_at / push_bounded(item, limit) / replace` 每次变更一次
+通知，`get` 返回冻结快照（就地改写当场 FrozenError）。beryl 已采用：
+WindowManager z 序表、demo toasts（`push_bounded` 顺带解决无上限堆积）。
+普通 `Signal([])` 只剩整体替换语义，`sig.set(sig.get + [x])` 属于旧风格；
+单一值仍用 `signal`（惰性初值块、`peek` 不订阅读按需用）。
 
 ## 3. 现有资产
 
@@ -201,3 +221,11 @@ beryl/
   缩放/程序化 place 不吸附。
 - **Taskbar/chrome 事件冒泡**：窗口控制钮 on_click 内 `e.stopPropagation`，
   避免同时触发标题栏 on_front/on_head_click。
+- **裸写 `Signal` 撞 stdlib**（citrine F14）：进程信号 `::Signal` 与之同名，报错不指向
+  真因。服务类 include `Citrine::Reactive` 或用 `Citrine.signal(...)` /
+  `Citrine.signal_list(...)`（WindowManager 已采用后者）；组件内仍用 `signal(:name)`。
+- **citrine keyed 复用后（v0.3）**：元素/组件槽位的复用**限定同一组件**（F24）——
+  跨组件复用会让节点沿用旧 owner 的 Effect；beryl 未来给列表行上
+  `render(..., key:)` 时 key 只需兄弟间唯一，重复 key 直接报错。
+- **G-12 生命周期宏可变参数**：citrine 的 on_mount/on_unmount 已改为可变参数
+  （Opal 下多传实参不再被静默丢弃），beryl 组件可放心使用。

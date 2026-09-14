@@ -129,7 +129,8 @@ module Beryl
 
     def initialize(viewport: nil)
       @viewport = viewport
-      @order = Citrine::Signal.new([])   # z 序（末尾 = 最上层），也是注册表成员表
+      # z 序（末尾 = 最上层），也是注册表成员表；signal_list 让「改集合」本身成为触发点
+      @order = Citrine.signal_list([])
       @records = {}
     end
 
@@ -152,14 +153,14 @@ module Beryl
                                 Citrine::Signal.new(normalize(geometry)),
                                 Citrine::Signal.new({ minimized: false, maximized: false, restore: nil }),
                                 min_w, min_h)
-      @order.set(@order.get + [id])
+      @order << id
       self
     end
 
     def close(id)
       assert_outside_effect!(:close)
       @records.delete(id)
-      @order.set(@order.get - [id])
+      @order.delete(id)
     end
 
     def windows

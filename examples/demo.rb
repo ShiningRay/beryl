@@ -8,7 +8,6 @@ require 'beryl'
 # 桌面：WindowManager 管两个窗口 + 任务栏 + 菜单栏
 class Desktop < Citrine::Component
   state :dialog, default: nil
-  state :toasts, default: []
   state :lang,   default: :ruby
   state :dark,   default: false
   state :tab,    default: 'form'
@@ -34,9 +33,12 @@ class Desktop < Citrine::Component
     @wm = Beryl::WindowManager.new(viewport: { w: `window.innerWidth`, h: `window.innerHeight` })
               .open(:gallery, title: '组件画廊', geometry: { x: 30, y: 46, w: 470, h: 420 })
               .open(:data, title: '数据视图', geometry: { x: 530, y: 70, w: 430, h: 330 })
+    # 响应式集合（citrine signal_list）：push_bounded 一次通知完成「追加 + 封顶」
+    @toasts = Citrine.signal_list([])
   end
 
-  attr_reader :wm
+  attr_reader :wm, :toasts
+
   def view
     menubar.view
     wm.frame(:gallery, content: -> { gallery_body }, on_close: -> { wm.toggle_min(:gallery) }).view
@@ -206,11 +208,11 @@ class Desktop < Citrine::Component
   end
 
   def toast(msg, kind = 'success')
-    self.toasts = toasts + [{ 'msg' => msg, 'kind' => kind }]
+    @toasts.push_bounded({ 'msg' => msg, 'kind' => kind }, 5)   # 最多同时 5 条
   end
 
   def dismiss(i)
-    self.toasts = toasts - [toasts[i]]
+    @toasts.delete_at(i)
   end
 end
 
