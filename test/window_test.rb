@@ -226,6 +226,19 @@ class WindowTest < Minitest::Test
     assert_includes off, 'is-inactive'
   end
 
+  # 最大化态：□ 控制钮变还原图标 ⧉（还原入口就是同一颗按钮；
+  # tooltip 是 L1 tip 原语，SSR 不序列化，浏览器侧验收）
+  def test_window_frame_maximized_glyph
+    normal = render(Beryl::WindowFrame.new(title: 'x', geometry: {}, maximizable: true, on_maximize: -> {}))
+    assert_includes normal, '□'
+    refute_includes normal, '⧉'
+    maxed = render(Beryl::WindowFrame.new(title: 'x', geometry: {}, maximizable: true,
+                                          maximized: true, on_maximize: -> {}))
+    assert_includes maxed, '⧉'
+    refute_includes maxed, '□'
+    assert_includes maxed, 'is-maximized'
+  end
+
   def test_window_frame_dblclick_wiring
     dblclicked = false
     host = DblHost.new(-> { dblclicked = true })

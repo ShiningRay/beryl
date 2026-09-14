@@ -22,6 +22,7 @@ module Beryl
     prop :min_h, type: Numeric, default: 70
     prop :active, default: nil          # true/false/nil（nil 保持旧外观）
     prop :minimized, default: false     # true 时整个窗口不渲染
+    prop :maximized, default: false     # 最大化态：□ 控制钮变还原图标 ⧉（由 WindowManager 注入）
     prop :closable, default: false
     prop :minimizable, default: false
     prop :maximizable, default: false
@@ -82,13 +83,20 @@ module Beryl
 
       row(css_class: 'b-win-controls', gap: 4) do
         if minimizable
-          box(css_class: 'b-win-btn', on_click: ->(e) { e.stopPropagation; on_minimize&.call }) { '−' }
+          box(css_class: 'b-win-btn', tip: '最小化',
+              on_click: ->(e) { e.stopPropagation; on_minimize&.call }) { '−' }
         end
         if maximizable
-          box(css_class: 'b-win-btn', on_click: ->(e) { e.stopPropagation; on_maximize&.call }) { '□' }
+          # 最大化态按钮变还原图标（⧉），tooltip 同步——切换入口就是同一颗按钮
+          box(css_class: maximized ? 'b-win-btn is-maximized' : 'b-win-btn',
+              tip: maximized ? '还原' : '最大化',
+              on_click: ->(e) { e.stopPropagation; on_maximize&.call }) do
+            maximized ? '⧉' : '□'
+          end
         end
         if closable
-          box(css_class: 'b-win-btn', on_click: ->(e) { e.stopPropagation; on_close&.call }) { '✕' }
+          box(css_class: 'b-win-btn', tip: '关闭',
+              on_click: ->(e) { e.stopPropagation; on_close&.call }) { '✕' }
         end
       end
     end
@@ -293,6 +301,7 @@ module Beryl
         z_index: z(id),
         active: active?(id),
         minimized: r.state.get[:minimized],
+        maximized: r.state.get[:maximized],
         min_w: r.min_w, min_h: r.min_h,
         on_front: ->(_el) { focus(id) },
         on_move: ->(ev) { place(id, ev, snap: true) },
