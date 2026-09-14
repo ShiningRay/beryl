@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Beryl Demo</title>
+<style>
+  body { margin: 0; background: #0b0e14; color: #c9d4e6; font: 13px/1.45 -apple-system, "PingFang SC", sans-serif; height: 100vh; }
+  #app { height: 100vh; }
+  .panel { background: #11151f; border: 1px solid #232b3b; border-radius: 10px; display: flex; overflow: hidden; }
+  .panel-head { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #151b28; border-bottom: 1px solid #232b3b; cursor: grab; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #4f8cff; }
+  .wclass { margin-left: auto; color: #7d8aa5; font-size: 11px; }
+  .panel-body { flex: 1; overflow: auto; padding: 8px; }
+  button { background: #151b28; color: #c9d4e6; border: 1px solid #232b3b; border-radius: 6px; padding: 4px 12px; cursor: pointer; }
+  .menu-overlay { position: fixed; inset: 0; z-index: 2900; }
+  .ctx-menu { position: fixed; z-index: 3000; min-width: 170px; background: #151b28; border: 1px solid #232b3b; border-radius: 8px; padding: 4px; display: flex; flex-direction: column; }
+  .menu-item { padding: 5px 12px; border-radius: 5px; cursor: pointer; }
+  .menu-item:hover { background: #4f8cff26; }
+  .toast { position: fixed; right: 16px; bottom: 16px; background: #161b28; border: 1px solid #232b3b; border-left: 3px solid #4f8cff; border-radius: 8px; padding: 8px 14px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="demo.js"></script>
+</body>
+</html>
