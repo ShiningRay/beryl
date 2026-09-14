@@ -12,6 +12,14 @@
   button:hover { border-color: var(--accent); }
   p { margin: 0; }
 
+  /* ── 滚动条：暗色主题细滚动条（WebKit/Blink 走伪元素，Firefox 走 scrollbar-*）── */
+  * { scrollbar-width: thin; scrollbar-color: #2a3348 transparent; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2a3348; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a4660; }
+  ::-webkit-scrollbar-corner { background: transparent; }
+
   /* ── WindowFrame（沿用旧类名 + 状态类）────────────────── */
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; display: flex; overflow: hidden; box-shadow: 0 10px 30px #0006; }
   .panel.is-active { border-color: #35507e; }
