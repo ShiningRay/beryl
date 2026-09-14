@@ -233,6 +233,12 @@ beryl/
   `wm.frame(id)` 会对未注册窗口 raise（fail fast 设计），重渲染半途崩溃——
   旧 DOM 被拆、任务栏连带消失。渲染窗口一律以 `wm.windows.include?(id)` 为准
   （demo 的 `window(id)` 包装）；重开走 `wm.open` 回注册表（demo 菜单「新窗口」）。
+- **拖拽手势与重渲染竞争**：mousedown 触发 on_front/focus 会同步重渲染并替换
+  面板节点，旧监听器持有的 pane 变成游离节点——mousemove 样式写不上（跟随降级），
+  mouseup 从游离节点量出的 offsetWidth/Height 全是 0，payload 落在 (0,0) 命中顶缘
+  吸附 → 「拖未激活窗口直接最大化」。L1 setup_drag 已改为纯数学回写
+  （mousedown 基准值 + 指针位移，payload 为普通 Hash），不读手势中途的节点现状；
+  live 跟随的彻底修复要等 render(key:) 让窗口节点跨渲染存活。
 - **拖拽回写的尺寸口径**：payload 用 offsetWidth/Height（**含边框的外框尺寸**），
   页面若按默认 content-box 渲染，回写一次大 2×边框 px——点一下标题栏窗口就
   「呼吸」变大。页面必须 `box-sizing: border-box`（demo 已加），回写才与 CSS

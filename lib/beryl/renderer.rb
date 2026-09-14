@@ -99,46 +99,61 @@ module Beryl
         vw = Native(`window`)[:innerWidth]
         vh = Native(`window`)[:innerHeight]
         moved = false   # 纯点击（未超过阈值）不算拖拽：mouseup 不回调，几何不回写
+        ldx = 0
+        ldy = 0
+        # 手势中途 view 可能重渲染并替换面板节点（如 mousedown 触发 on_front/focus），
+        # 本监听器仍持有旧 pane——最终几何一律按「mousedown 基准 + 指针位移」纯数学
+        # 计算，不读旧节点现状；mousemove 的样式跟随在旧节点已脱离文档时自动跳过
+        compute_geom = lambda {
+          if is_move
+            left = ol + ldx
+            top = ot + ldy
+            if clamp_move
+              left = [[left, 60 - ow].max, vw - 60].min
+              top = [[top, 0].max, vh - 30].min
+            end
+            { left: left, top: top, w: ow, h: oh }
+          else
+            w = ow
+            h = oh
+            left = ol
+            top = ot
+            w = ow + ldx if dir.include?("e")
+            h = oh + ldy if dir.include?("s")
+            w = ow - ldx if dir.include?("w")
+            h = oh - ldy if dir.include?("n")
+            w = min_w if w < min_w
+            h = min_h if h < min_h
+            left = ol + (ow - w) if dir.include?("w")
+            top = ot + (oh - h) if dir.include?("n")
+            { left: left, top: top, w: w, h: h }
+          end
+        }
         on_move = nil
         on_up = ->(_raw2) {
           doc.removeEventListener("mousemove", on_move)
           doc.removeEventListener("mouseup", on_up)
           next unless moved
 
-          payload = Native(`({x: #{pane[:offsetLeft]}, y: #{pane[:offsetTop]}, w: #{pane[:offsetWidth]}, h: #{pane[:offsetHeight]}})`)
-          node.owner.handle_event(handler, payload)
+          g = compute_geom.call
+          node.owner.handle_event(handler, { x: g[:left], y: g[:top], w: g[:w], h: g[:h] })
         }
         on_move = ->(raw2) {
           e2 = Native(raw2)
-          dx = e2[:clientX] - sx
-          dy = e2[:clientY] - sy
-          moved = true if dx.abs > 1 || dy.abs > 1
+          ldx = e2[:clientX] - sx
+          ldy = e2[:clientY] - sy
+          moved = true if ldx.abs > 1 || ldy.abs > 1
+          next unless pane[:isConnected]   # 旧面板已被重渲染替换：样式跟随降级，松手仍回写正确几何
+
+          g = compute_geom.call
           if is_move
-            left = ol + dx
-            top = ot + dy
-            if clamp_move
-              left = [[left, 60 - ow].max, vw - 60].min
-              top = [[top, 0].max, vh - 30].min
-            end
-            pane[:style][:left] = "#{left}px"
-            pane[:style][:top] = "#{top}px"
+            pane[:style][:left] = "#{g[:left]}px"
+            pane[:style][:top] = "#{g[:top]}px"
           else
-            w = ow
-            h = oh
-            left = ol
-            top = ot
-            w = ow + dx if dir.include?("e")
-            h = oh + dy if dir.include?("s")
-            w = ow - dx if dir.include?("w")
-            h = oh - dy if dir.include?("n")
-            w = min_w if w < min_w
-            h = min_h if h < min_h
-            left = ol + (ow - w) if dir.include?("w")
-            top = ot + (oh - h) if dir.include?("n")
-            pane[:style][:width] = "#{w}px"
-            pane[:style][:height] = "#{h}px"
-            pane[:style][:left] = "#{left}px"
-            pane[:style][:top] = "#{top}px"
+            pane[:style][:width] = "#{g[:w]}px"
+            pane[:style][:height] = "#{g[:h]}px"
+            pane[:style][:left] = "#{g[:left]}px"
+            pane[:style][:top] = "#{g[:top]}px"
           end
         }
         doc.addEventListener("mousemove", on_move)
