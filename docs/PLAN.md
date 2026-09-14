@@ -177,6 +177,10 @@ beryl/
 
 - 版本 0.x，语义化；citrine 依赖走 path/git（`../citrine`），双仓同步演进，
   citrine 发 gem 后切换为正式依赖。
+- **gem 发布名 `citrine-beryl`**（RubyGems 的 `beryl` 名已被他人占用，2018）；
+  require 名保持 `beryl`。发版流程：改 gemspec 版本 → 推 `v*` 标签 → Release
+  工作流构建 gem 附 GitHub Release 并 gem push（需仓库 secret RUBYGEMS_API_KEY，
+  与 citrine 同款；未配置时自动跳过 push，仅附产物）。
 - 编译：`bundle exec opal -c -I../citrine/lib -Ilib -o examples/demo.js examples/demo.rb`
   （beryl 目录内，借 citrine 的 bundle；require 走 `-I` 裸路径，
   不要 `require_relative '../lib/beryl'`——Opal PathReader 命中同名目录会 EISDIR）。
