@@ -41,8 +41,8 @@ class Desktop < Citrine::Component
 
   def view
     menubar.view
-    wm.frame(:gallery, content: -> { gallery_body }, on_close: -> { wm.toggle_min(:gallery) }).view
-    wm.frame(:data, content: -> { data_body }).view
+    window(:gallery)
+    window(:data)
     Beryl::Taskbar.new(wm: wm).view
     render_dialog if dialog
     toasts.each_with_index do |t, i|
@@ -52,12 +52,24 @@ class Desktop < Citrine::Component
     end
   end
 
+  # 关闭（✕）会注销窗口——渲染必须以 wm.windows 为准条件渲染：
+  # 无守卫地 wm.frame(已关闭 id) 会 raise（frame 对未注册窗口 fail fast）
+  def window(id)
+    return unless wm.windows.include?(id)
+
+    wm.frame(id, content: -> { frame_content(id) }).view
+  end
+
+  def frame_content(id)
+    id == :gallery ? gallery_body : data_body
+  end
+
   # ── 菜单栏 ────────────────────────────────────────────
 
   def menubar
     Beryl::MenuBar.new(viewport: menu_viewport, open_index: signal(:menu_open), menus: [
       { label: '桌面', items: [
-        { label: '新窗口', action: -> { toast('就一个桌面，别贪心') } },
+        { label: '新窗口', action: -> { new_window } },
         { separator: true },
         { label: '弹窗', shortcut: '⌘D', action: -> { self.dialog = 'confirm' } },
         { label: '打招呼', action: -> { toast('hello from beryl', 'info') } },
@@ -137,6 +149,17 @@ class Desktop < Citrine::Component
     cur = tree_open.dup
     cur.include?(id) ? cur.delete(id) : cur << id
     self.tree_open = cur
+  end
+
+  # ✕ 关掉的窗口从这里重开（注册回 WindowManager 即可，几何给默认值）
+  def new_window
+    id = %i[gallery data].find { |i| !wm.windows.include?(i) }
+    if id
+      geom = id == :gallery ? { x: 30, y: 46, w: 470, h: 420 } : { x: 530, y: 70, w: 430, h: 330 }
+      wm.open(id, title: id == :gallery ? '组件画廊' : '数据视图', geometry: geom)
+    else
+      toast('两个窗口都开着呢')
+    end
   end
 
   def feed_tab

@@ -229,3 +229,7 @@ beryl/
   `render(..., key:)` 时 key 只需兄弟间唯一，重复 key 直接报错。
 - **G-12 生命周期宏可变参数**：citrine 的 on_mount/on_unmount 已改为可变参数
   （Opal 下多传实参不再被静默丢弃），beryl 组件可放心使用。
+- **✕ 关闭后必须条件渲染**：`wm.close` 注销窗口后，view 里无守卫的
+  `wm.frame(id)` 会对未注册窗口 raise（fail fast 设计），重渲染半途崩溃——
+  旧 DOM 被拆、任务栏连带消失。渲染窗口一律以 `wm.windows.include?(id)` 为准
+  （demo 的 `window(id)` 包装）；重开走 `wm.open` 回注册表（demo 菜单「新窗口」）。
