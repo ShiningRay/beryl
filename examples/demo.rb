@@ -143,10 +143,10 @@ class Desktop < Citrine::Component
       Beryl::Progress.new(value: 0, indeterminate: true).view
       Beryl::Spinner.new(text: '加载中…').view
       row(gap: 6) do
-        Beryl::Badge.new(label: 'info', kind: 'info').view
-        Beryl::Badge.new(label: 'ok', kind: 'success').view
-        Beryl::Badge.new(label: 'warn', kind: 'warn').view
-        Beryl::Badge.new(label: 'err', kind: 'error').view
+        Beryl::Badge.new(text: 'info', kind: 'info').view
+        Beryl::Badge.new(text: 'ok', kind: 'success').view
+        Beryl::Badge.new(text: 'warn', kind: 'warn').view
+        Beryl::Badge.new(text: 'err', kind: 'error').view
       end
       Beryl::EmptyState.new(message: '这里什么都没有', icon: '∅',
                             action: -> { empty_action }).view

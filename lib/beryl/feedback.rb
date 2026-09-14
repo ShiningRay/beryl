@@ -76,14 +76,15 @@ module Beryl
     end
   end
 
-  # L2 · 徽标：kind 可为 info/success/warn/error 或 nil（中性）
+  # L2 · 徽标：kind 可为 info/success/warn/error 或 nil（中性）。
+  # prop 叫 text 不叫 label——远端 citrine 的 prop 宏已禁止与元素 DSL 同名
   class Badge < Citrine::Component
-    prop :label, type: String
+    prop :text, type: String
     prop :kind             # String，可空
 
     def view
       cls = kind ? "b-badge b-badge-#{kind}" : 'b-badge'
-      box(css_class: cls) { label }
+      box(css_class: cls) { text }
     end
   end
 

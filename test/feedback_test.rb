@@ -47,8 +47,8 @@ class FeedbackTest < Minitest::Test
 
   def test_spinner_badge_empty_state
     assert_includes render(Beryl::Spinner.new(text: '加载中')), '加载中'
-    assert_includes render(Beryl::Badge.new(label: 'v2', kind: 'info')), 'b-badge-info'
-    assert_includes render(Beryl::Badge.new(label: 'v2')), 'b-badge'
+    assert_includes render(Beryl::Badge.new(text: 'v2', kind: 'info')), 'b-badge-info'
+    assert_includes render(Beryl::Badge.new(text: 'v2')), 'b-badge'
     empty = render(EmptyHost.new)
     assert_includes empty, '∅'
     assert_includes empty, '暂无数据'
