@@ -94,7 +94,7 @@ WindowManager z 序表、demo toasts（`push_bounded` 顺带解决无上限堆�
 | 原语 | 说明 |
 |---|---|
 | `textarea` + `value:`/`on_submit` | 多行输入：Signal 双向绑定 + ⌘⏎ 提交 |
-| `drag_move` / `drag_resize` + `drag_dir`/`drag_min`/`drag_clamp`/`drag_pane` | 零重渲染拖拽；八向缩放；最小尺寸；视口 clamp；面板选择器 |
+| `drag_move` / `drag_resize` + `drag_dir`/`drag_min`/`drag_clamp`/`drag_pane`/`drag_scale` | 零重渲染拖拽；八向缩放；最小尺寸；视口 clamp；面板选择器；世界缩放补偿（屏幕位移 ÷ drag_scale） |
 | `on_front` | mousedown 置顶 |
 | `on_menu` | contextmenu 菜单 |
 | `on_hover` | mouseenter/leave → true/false |
@@ -246,3 +246,12 @@ beryl/
 - **纯点击不算拖拽**：L1 setup_drag 带 moved 阈值（位移 >1px 才算拖），
   mouseup 未超阈值不回调 handler——点击标题栏不再触发 place/重渲染
   （顺带消除「点在屏幕顶缘的标题栏把窗口最大化」的误吸附路径）。
+- **世界缩放下的拖拽漂移（drag_scale）**：offsetLeft/Top 是布局（世界）坐标，
+  不受容器 CSS transform 影响，而 clientX/Y 是屏幕像素——容器带 zoom 缩放时
+  不按比例补偿，zoom=2 的窗口拖起来跑双倍距离，且松手回写把误差烤进 payload。
+  L1 setup_drag 加可选 `drag_scale:` prop（Numeric 或 callable，mousedown 时
+  取值一次、手势期冻结），屏幕位移 ÷ scale 再进 compute_geom 与 live 跟随；
+  数学核心提出为纯 CRuby 的 `Beryl::DragGeometry.compute`（回归测试
+  `test/drag_geometry_test.rb`），WindowFrame/wm.frame 经 `drag_scale:` prop
+  透传标题栏与八向手柄。注：drag_clamp 的视口边界仍是屏幕像素口径，仅
+  scale=1（经典桌面）语义精确。

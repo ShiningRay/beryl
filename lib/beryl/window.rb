@@ -20,6 +20,8 @@ module Beryl
     prop :resizable, default: true
     prop :min_w, type: Numeric, default: 160
     prop :min_h, type: Numeric, default: 70
+    prop :drag_scale         # 世界缩放倍率（ZUI 相机 zoom，Numeric 或 callable），
+                             # 透传拖拽/缩放手柄：屏幕位移 ÷ drag_scale = 布局位移
     prop :active, default: nil          # true/false/nil（nil 保持旧外观）
     prop :minimized, default: false     # true 时整个窗口不渲染
     prop :maximized, default: false     # 最大化态：□ 控制钮变还原图标 ⧉（由 WindowManager 注入）
@@ -46,7 +48,7 @@ module Beryl
 
       head_opts = {
         drag_move: on_move, on_menu: on_menu, on_click: on_head_click,
-        on_dblclick: on_head_dblclick,
+        on_dblclick: on_head_dblclick, drag_scale: drag_scale,
       }.compact
       body_opts = { on_click: on_body_click }.compact
       frame_opts = { on_front: on_front }.compact
@@ -108,7 +110,7 @@ module Beryl
       dirs.each do |d|
         box(css_class: "rs-handle rs-#{d}",
             drag_resize: on_resize, drag_dir: d,
-            drag_min: [min_w, min_h])
+            drag_min: [min_w, min_h], drag_scale: drag_scale)
       end
     end
 
