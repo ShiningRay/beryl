@@ -199,6 +199,13 @@ class WindowTest < Minitest::Test
     assert wm.active?(:b)
   end
 
+  def test_taskbar_empty_renders_no_brackets
+    wm = Beryl::WindowManager.new(viewport: VP)
+    html = render(TaskbarHost.new(wm))
+    refute_includes html, '[]'             # each_window 空表不外泄：块返回值曾被 tos 成可见 "[]"
+    assert_includes html, 'b-taskbar'
+  end
+
   # ── WindowFrame chrome / minimized ────────────────────
 
   def test_window_frame_chrome_is_opt_in

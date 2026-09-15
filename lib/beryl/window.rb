@@ -184,6 +184,7 @@ module Beryl
 
     def each_window
       @order.get.each { |id| yield @records[id] }
+      nil # 块的返回值不外泄——否则空窗时块返回 []，会被渲染层 tos 成可见 "[]" 文本
     end
 
     # ── 状态查询（view 内读取即响应式）────────────────────
