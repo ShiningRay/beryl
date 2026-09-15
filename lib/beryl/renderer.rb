@@ -68,7 +68,9 @@ module Beryl
     # 通用拖拽：drag_move / drag_resize——按住本节点拖动父面板（或 drag_pane
     # 选择器命中的祖先）；期间直接改 style（零重渲染），松手回调 {x, y, w, h}。
     # drag_dir: 八向缩放方位（n/e/s/w/ne/nw/se/sw，默认 se）；
-    # drag_min: [w, h] 最小尺寸；drag_clamp: 拖动限制在视口内（留 60×30 可见）。
+    # drag_min: [w, h] 最小尺寸；drag_clamp: 拖动限制在视口内（留 60×30 可见）；
+    # drag_scale: 世界缩放倍率（如 ZUI 相机 zoom，Numeric 或 callable，
+    #   mousedown 时取值一次）——屏幕指针位移 ÷ scale 才等于布局位移。
     def setup_drag(node)
       move_handler = node.props[:drag_move]
       resize_handler = node.props[:drag_resize]
@@ -83,6 +85,7 @@ module Beryl
       dir = node.props[:drag_dir] || 'se'
       min_w, min_h = node.props[:drag_min] || [160, 70]
       clamp_move = node.props[:drag_clamp] ? true : false
+      drag_scale = node.props[:drag_scale]
       doc = Native(`document`)
 
       el.addEventListener("mousedown", ->(raw) {
@@ -92,42 +95,25 @@ module Beryl
         ev.preventDefault
         sx = ev[:clientX]
         sy = ev[:clientY]
-        ol = pane[:offsetLeft]
-        ot = pane[:offsetTop]
-        ow = pane[:offsetWidth]
-        oh = pane[:offsetHeight]
-        vw = Native(`window`)[:innerWidth]
-        vh = Native(`window`)[:innerHeight]
+        # mousedown 时取值：手势期间冻结（与 sx/sy 同语义），支持传 callable 取动态 zoom
+        scale = drag_scale.respond_to?(:call) ? drag_scale.call : drag_scale
+        base = {
+          left: pane[:offsetLeft], top: pane[:offsetTop],
+          w: pane[:offsetWidth], h: pane[:offsetHeight],
+        }
+        viewport = { w: Native(`window`)[:innerWidth], h: Native(`window`)[:innerHeight] }
         moved = false   # 纯点击（未超过阈值）不算拖拽：mouseup 不回调，几何不回写
-        ldx = 0
-        ldy = 0
+        sdx = 0         # 屏幕像素位移（相对手势起点；moved 阈值按屏幕口径判定）
+        sdy = 0
         # 手势中途 view 可能重渲染并替换面板节点（如 mousedown 触发 on_front/focus），
         # 本监听器仍持有旧 pane——最终几何一律按「mousedown 基准 + 指针位移」纯数学
-        # 计算，不读旧节点现状；mousemove 的样式跟随在旧节点已脱离文档时自动跳过
+        # 计算（核心在 Beryl::DragGeometry，CRuby 可测），不读旧节点现状；
+        # mousemove 的样式跟随在旧节点已脱离文档时自动跳过
         compute_geom = lambda {
-          if is_move
-            left = ol + ldx
-            top = ot + ldy
-            if clamp_move
-              left = [[left, 60 - ow].max, vw - 60].min
-              top = [[top, 0].max, vh - 30].min
-            end
-            { left: left, top: top, w: ow, h: oh }
-          else
-            w = ow
-            h = oh
-            left = ol
-            top = ot
-            w = ow + ldx if dir.include?("e")
-            h = oh + ldy if dir.include?("s")
-            w = ow - ldx if dir.include?("w")
-            h = oh - ldy if dir.include?("n")
-            w = min_w if w < min_w
-            h = min_h if h < min_h
-            left = ol + (ow - w) if dir.include?("w")
-            top = ot + (oh - h) if dir.include?("n")
-            { left: left, top: top, w: w, h: h }
-          end
+          Beryl::DragGeometry.compute(base, sdx, sdy,
+                                      scale: scale, move: is_move, dir: dir,
+                                      min: [min_w, min_h], clamp: clamp_move,
+                                      viewport: viewport)
         }
         on_move = nil
         on_up = ->(_raw2) {
@@ -140,9 +126,9 @@ module Beryl
         }
         on_move = ->(raw2) {
           e2 = Native(raw2)
-          ldx = e2[:clientX] - sx
-          ldy = e2[:clientY] - sy
-          moved = true if ldx.abs > 1 || ldy.abs > 1
+          sdx = e2[:clientX] - sx
+          sdy = e2[:clientY] - sy
+          moved = true if sdx.abs > 1 || sdy.abs > 1
           next unless pane[:isConnected]   # 旧面板已被重渲染替换：样式跟随降级，松手仍回写正确几何
 
           g = compute_geom.call

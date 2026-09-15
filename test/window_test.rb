@@ -179,6 +179,21 @@ class WindowTest < Minitest::Test
     assert_equal [], wm.windows
   end
 
+  # drag_scale：世界缩放补偿（ZUI 相机 zoom）——prop 契约 + wm.frame opts 透传。
+  # L1 原语在浏览器侧才接线，这里锁 prop 通路；数学在 DragGeometryTest 逐点锁。
+  def test_frame_drag_scale_prop_and_passthrough
+    html = render(Beryl::WindowFrame.new(
+      title: 'z', geometry: { 'px' => 1, 'py' => 1 }, drag_scale: 2.0,
+      on_move: ->(_ev) {}, on_resize: ->(_ev) {},
+      content: -> { nil },
+    ))
+    assert_includes html, 'rs-handle'        # drag_scale 不改结构，随标题栏/手柄透传
+    wm = Beryl::WindowManager.new
+    wm.open(:a, geometry: { x: 0, y: 0, w: 100, h: 80 })
+    frame = wm.frame(:a, drag_scale: -> { 2.0 }, content: -> { nil })
+    assert_equal 2.0, frame.drag_scale.call  # callable（mousedown 时取值）经 opts 透传
+  end
+
   # ── Taskbar ───────────────────────────────────────────
 
   def test_taskbar_renders_and_toggles
