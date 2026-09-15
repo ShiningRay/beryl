@@ -228,6 +228,13 @@ module Beryl
     end
 
     # 原生 tooltip：mouseenter 时挂一个 .b-tip 到 body，mouseleave 移除
+    # tooltip（L1 tip 原语）：mouseenter 挂气泡、mouseleave 摘除。
+    # 气泡是 body 上的 fixed 元素——**节点在悬停中被卸载/重渲时（关窗、形态
+    # 切换、响应式重跑）mouseleave 不会触发**，气泡永久留在屏幕上（实测
+    # 「关掉窗口后 tip 到处都在」）。两道保险：
+    #   ① 回收挂进 node.owned_effects 的 cleanup——节点销毁时随 Effect
+    #      dispose 执行（Renderer#dispose → owned_effects 逐个 dispose）；
+    #   ② 挂新气泡前先清扫全部残留 .b-tip（同刻只应存在一个提示）。
     def setup_tip(node)
       tip = node.props[:tip]
       return unless tip
@@ -235,8 +242,12 @@ module Beryl
       el = node.dom
       doc = Native(`document`)
       tip_el = nil
+      node.owned_effects << Citrine::Effect.create(track_cleanup: true) {
+        -> { tip_el.remove if tip_el; tip_el = nil }
+      }
       el.addEventListener("mouseenter", ->(_raw) {
         r = el.getBoundingClientRect
+        Native(`document.querySelectorAll('.b-tip').forEach(function(e){e.remove()})`) # ②
         div = doc.createElement("div")
         div[:className] = "b-tip"
         div[:textContent] = tip.to_s
