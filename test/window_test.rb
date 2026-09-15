@@ -269,6 +269,44 @@ class WindowTest < Minitest::Test
     assert dblclicked
   end
 
+  # ── 异形窗口（shape）───────────────────────────────────
+
+  def test_window_frame_shape_wraps_and_clips
+    html = render(Beryl::WindowFrame.new(
+      title: 'note', geometry: { 'px' => 10, 'py' => 10, 'pw' => 240, 'ph' => 240 },
+      css_class: 'sticky-note-win', shape: 'polygon(0 0, 100% 0, 100% 100%)',
+      content: -> { nil },
+    ))
+    assert_includes html, 'panel-wrap sticky-note-win'  # 包裹层带 css_class（样式锚点）
+    assert_includes html, 'left:10px'                   # 定位/z 序在包裹层
+    assert_includes html, 'drop-shadow'                 # 阴影随裁剪轮廓
+    assert_includes html, 'clip-path:polygon'           # 裁剪作用于内层 .panel
+    assert_includes html, 'width:100%'
+    assert_match(/panel-wrap.*?clip-path/m, html)       # 裁剪节点必须在包裹层内部 emit
+    refute_includes html, '#<Citrine'                   # 节点不得作为文本泄漏（块返回值坑）
+  end
+
+  def test_window_frame_without_shape_has_no_wrap
+    html = render(Beryl::WindowFrame.new(
+      title: 'plain', geometry: { 'px' => 1, 'py' => 1 }, content: -> { nil },
+    ))
+    refute_includes html, 'panel-wrap'
+    refute_includes html, 'clip-path'
+  end
+
+  def test_frame_snap_opt_out
+    wm = Beryl::WindowManager.new(viewport: VP)
+    wm.open(:a, geometry: { x: 100, y: 100, w: 200, h: 150 })
+    frame = wm.frame(:a, snap: false, content: -> { nil })
+    frame.on_move.call({ x: 100, y: 2, w: 200, h: 150 })   # 顶边吸附带内
+    refute wm.maximized?(:a)                               # snap: false → 不吸附
+    assert_equal 2, wm.geometry(:a)[:y]
+
+    snapped = wm.frame(:a, content: -> { nil })            # 默认仍吸附
+    snapped.on_move.call({ x: 100, y: 2, w: 200, h: 150 })
+    assert wm.maximized?(:a)
+  end
+
 end
 
 # ── 宿主组件 ─────────────────────────────────────────────

@@ -129,8 +129,8 @@ WindowManager z 序表、demo toasts（`push_bounded` 顺带解决无上限堆�
 ### L3 · 桌面外壳（window.rb）
 | 组件/服务 | 说明 |
 |---|---|
-| `WindowFrame` | 标题栏拖动/右键/置顶/双击最大化 + chrome 控制钮（− □ ✕，opt-in）+ content/tools 插槽 + **八向缩放手柄** + active/inactive 外观 + minimized 不渲染 |
-| `WindowManager` | 注册表 + z 序 + 最大化/最小化（restore 几何）+ 视口 clamp + **Aero Snap**（拖到上/左/右缘 → 最大化/半屏；吸附仅拖动路径，缩放不吸附）+ `frame(id)` 一站式接线（守卫见 F6） |
+| `WindowFrame` | 标题栏拖动/右键/置顶/双击最大化 + chrome 控制钮（− □ ✕，opt-in）+ content/tools 插槽 + **八向缩放手柄** + active/inactive 外观 + minimized 不渲染 + **异形窗口**（`shape:` clip-path；包裹层 .panel-wrap 承担定位与 drop-shadow，裁剪作用于内层 .panel） |
+| `WindowManager` | 注册表 + z 序 + 最大化/最小化（restore 几何）+ 视口 clamp + **Aero Snap**（拖到上/左/右缘 → 最大化/半屏；吸附仅拖动路径，缩放不吸附；`frame(snap: false)` 可按窗关闭——异形窗口用）+ `frame(id)` 一站式接线（守卫见 F6） |
 | `Taskbar` | 任务栏：激活再点 → 最小化；后台/最小化点 → 还原置顶 |
 
 ### 支撑（support.rb / overlay.rb）
