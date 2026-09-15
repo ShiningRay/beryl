@@ -84,19 +84,19 @@ module Beryl
       row(css_class: 'b-win-controls', gap: 4) do
         if minimizable
           box(css_class: 'b-win-btn', tip: '最小化',
-              on_click: ->(e) { e.stopPropagation; on_minimize&.call }) { '−' }
+              on_click: ->(e) { e.stop_propagation; on_minimize&.call }) { '−' }
         end
         if maximizable
           # 最大化态按钮变还原图标（⧉），tooltip 同步——切换入口就是同一颗按钮
           box(css_class: maximized ? 'b-win-btn is-maximized' : 'b-win-btn',
               tip: maximized ? '还原' : '最大化',
-              on_click: ->(e) { e.stopPropagation; on_maximize&.call }) do
+              on_click: ->(e) { e.stop_propagation; on_maximize&.call }) do
             maximized ? '⧉' : '□'
           end
         end
         if closable
           box(css_class: 'b-win-btn', tip: '关闭',
-              on_click: ->(e) { e.stopPropagation; on_close&.call }) { '✕' }
+              on_click: ->(e) { e.stop_propagation; on_close&.call }) { '✕' }
         end
       end
     end

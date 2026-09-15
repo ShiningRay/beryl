@@ -19,7 +19,7 @@ module Beryl
       box(css_class: 'b-dialog-overlay', on_click: ->(e) { backdrop(e) }) do
         stack(css_class: 'b-dialog', gap: 10,
               style: { width: "#{width}px" },
-              on_click: ->(e) { e.stopPropagation }) do
+              on_click: ->(e) { e.stop_propagation }) do
           row(css_class: 'b-dialog-head') do
             label(css_class: 'b-dialog-title') { title }
             box(css_class: 'b-dialog-x', on_click: ->(_e) { on_cancel&.call }) { '✕' } if on_cancel
