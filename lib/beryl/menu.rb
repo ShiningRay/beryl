@@ -184,8 +184,10 @@ module Beryl
         set_open(nil)
         return
       end
-      x = event ? event[:clientX] : 8
-      y = event ? event[:clientY] + 6 : 30
+      # 位置读原生坐标必须经 Event#raw（Citrine::Event 无 [] 访问器——
+      # E7 emerald 浏览器验收发现的 bug，2026-09-15 修复）
+      x = event ? event.raw[:clientX] : 8
+      y = event ? event.raw[:clientY] + 6 : 30
       set_open({ index: index, x: x, y: y })
     end
   end

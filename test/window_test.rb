@@ -253,6 +253,7 @@ class WindowTest < Minitest::Test
     host.frame.on_head_dblclick.call
     assert dblclicked
   end
+
 end
 
 # ── 宿主组件 ─────────────────────────────────────────────
@@ -282,6 +283,7 @@ class TaskbarHost < Citrine::Component
   def view
     Beryl::Taskbar.new(wm: @wm).view
   end
+
 end
 
 class DblHost < Citrine::Component
@@ -300,4 +302,5 @@ class DblHost < Citrine::Component
   def view
     frame.view
   end
+
 end

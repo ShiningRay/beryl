@@ -101,6 +101,15 @@ class MenuTest < Minitest::Test
     assert_includes html, '新建'
   end
 
+  def test_toggle_with_event_reads_raw_client_position
+    # 回归（2026-09-15）：toggle 曾直接 event[:clientX]——Citrine::Event 无 []
+    # 访问器，浏览器里点菜单必炸（NoMethodError），表现为静默无下拉。
+    bar = Beryl::MenuBar.new(menus: [{ label: '文件', items: [{ label: '新建', action: -> {} }] }])
+    event = Citrine::Event.new('click', raw: { clientX: 120, clientY: 88 })
+    bar.toggle(0, event)
+    assert_includes Citrine.render(bar), '新建'
+  end
+
   def test_prop_contract
     assert_raises(ArgumentError) { Beryl::Menu.new(items: [], x: 1, y: 1, on_close: -> {}, bogus: 1) }
   end
