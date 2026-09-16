@@ -63,12 +63,25 @@ Beryl::List.new(items: items, height: 300, row_height: 28).view
 
 L1 原语：textarea · drag（八向缩放/clamp/最小尺寸）· front · menu · hover ·
 dblclick · wheel · scroll · tabindex/autofocus · tip · 数据拖放 · auto_dismiss
-L2 控件：Menu · MenuBar · Popover · Select · MultiSelect · RadioGroup · Switch ·
-Slider · NumberInput · SearchInput · Combobox · ColorPicker · DatePicker · Tabs ·
-Accordion · Dialog(Alert/Confirm/Prompt) · Toast · Progress · Spinner · Badge ·
-EmptyState · Table · List(虚拟滚动) · Tree · KV · Breadcrumb · Pagination ·
-Toolbar · StatusBar · Icon
+L2 控件：Button · ButtonGroup · Input · Checkbox · CheckboxGroup · Menu · MenuBar ·
+Popover · Tooltip · Select · MultiSelect · RadioGroup · Switch · Slider ·
+NumberInput · SearchInput · Combobox · ColorPicker · DatePicker · Tabs ·
+Accordion · Field · Form · Dialog(Alert/Confirm/Prompt) · Toast · Notification ·
+Progress · Spinner · Badge · Tag · EmptyState · Table(排序/吸顶) ·
+List(虚拟滚动) · Tree · KV · Breadcrumb · Pagination · Divider · Toolbar ·
+StatusBar · Icon
 L3 外壳：WindowFrame · WindowManager（z 序/最大化/吸附/clamp）· Taskbar
+
+与主流库（AntD/MUI/Element）的差距盘点与补齐路线见
+[docs/PLAN.md §4.1](docs/PLAN.md)（M7）：已补 Button/Input/Checkbox/Field/Form/
+Tooltip/Notification/Table 排序吸顶；Tag/Card/Avatar/SplitPane/Drawer 等与
+主题 token、ARIA 仍在路线图上。
+
+## 样式
+
+beryl 不自带样式注入：组件样式参考表在 [assets/beryl.css](assets/beryl.css)
+（demo.html 的抽取版）。消费仓拷贝所需组件段并把色值改写为自己的设计令牌
+（market-terminal / sheets 的 styles.css 是现成范例）。
 
 ## 库法则（详见 [docs/PLAN.md](docs/PLAN.md)）
 

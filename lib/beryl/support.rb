@@ -46,6 +46,12 @@ module Beryl
     hash[key] || hash[key.to_s] || hash[key.to_sym]
   end
 
+  # 控件 prop 取值归一：bool | Signal 两可（disabled/loading/error …）。
+  # F4 受控哲学：跨渲染存活的交互态由消费者传 Signal，明值用于静态场景。
+  def self.flag(v)
+    v.respond_to?(:get) ? v.get : v
+  end
+
   # 拖拽几何核心（纯 CRuby，F5）：「mousedown 基准几何 + 屏幕指针位移」→ 手势几何。
   # 数学从 L1 setup_drag 提出，CRuby 可直接回归测试。
   # drag_scale（世界缩放倍率，如 ZUI 相机 zoom）：offsetLeft/Top 是布局（世界）

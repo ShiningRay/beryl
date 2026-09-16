@@ -4,7 +4,8 @@
 > 定位：Citrine 信号内核之上的**桌面式 UI 组件库**。Citrine ≈ React（内核），
 > Beryl ≈ MUI/AntD + 桌面外壳（组件库）。第一个真实消费者：RubyWorld。
 
-状态：v0.2 · M1-M4 主体落地（M2/M3 组件目录、M4 窗口管理与交互原语），
+状态：v0.4 · M1-M4 落地；M7「对表主流库缺口补齐」进行中（原子件/表单组装层/
+Tooltip/Notification/Table 排序吸顶已落地，见 §4.1），
 本文档是唯一的规划事实源，变更须同步修订。
 
 ---
@@ -37,6 +38,10 @@ Citrine 公共 API 扩展（子类化 Renderer、标准 Component），不 fork 
 跨组件内容注入（`content:` / `tools:`）用普通 `.call` 的 Proc——
 闭包保留父组件上下文，emit 的 owner 归属父组件，信号订阅互不干扰。
 这是 Beryl 组件组合的唯一正规方式。
+**插槽 Proc 必须发射节点**（调元素 DSL 或子组件 `.view`）：元素块的子内容
+= 块内发射的节点 + 块返回值（若是 String）；返回纯字符串的插槽 Proc 在块
+中间被调用时，字符串作普通语句被丢弃（Field/Tooltip 均踩过，表现为"内容
+消失"）。纯文本入口用 String prop（如 Tooltip `anchor:`）而不是字符串插槽。
 
 ### F3 · props 即契约
 未声明的 prop 立即 ArgumentError；声明了 type 的 prop 强制校验。
@@ -55,6 +60,14 @@ prop 名不得与元素 DSL 同名（如 `label`）——prop 定义的读取方
 实例**跨重渲染存活**，内部态从此可行；但 render 暂不支持插槽 block（citrine
 S3 待办），beryl 的插槽组件（content:/tools:）仍走 `.view` 模式，**受控开合
 仍是默认推荐**。集合态优先用 ListSignal（F9）。
+**v0.4 补充（sheets 桩断言真实踩坑）**：在父 view 里 `.new(...).view` 嵌入
+**无插槽**控件时，每次父重渲染都会新建实例——元素 owner 随之更换，citrine
+复用池"元素槽位只认同一 owner"（renderer take 的 owner 判等），keyed 与位置
+复用全部失效，DOM 身份（焦点/输入法/测试断言）每轮丢失。**需要稳定 DOM 身份
+的控件一律走 `render(组件类, **props, key:)`**（如 sheets/market 的 chip）；
+有插槽的组件维持 `.view` 模式。另有 Opal 侧约束：`String#<<` 不可用
+（Mutable String 未实现），类名/文案拼接一律数组 join——编译门只编译不运行，
+这类错误只会映到消费仓的桩验收上爆。
 
 ### F5 · 纯 CRuby 可测
 L2/L3 控件层禁止触碰 Opal/Native——用 `Citrine.render`（StringRenderer）
@@ -114,14 +127,20 @@ WindowManager z 序表、demo toasts（`push_bounded` 顺带解决无上限堆�
 | `Popover` | fixed 浮层容器（捕获层 + 定位 + z 序） |
 | `Select` / `MultiSelect` | CSS 锚定下拉；受控 `value`/`open` |
 | `RadioGroup` / `Switch` / `Slider` / `NumberInput` / `SearchInput` | 受控表单件 |
+| `Button` / `ButtonGroup` | kind/size/icon/loading/disabled（bool\|Signal 两可，`Beryl.flag` 归一）；text 或 content 插槽（M7） |
+| `Input` | 通用单行输入：前后缀字形/清空钮/错误态/禁用；value Signal 双向（M7） |
+| `Checkbox` / `CheckboxGroup` | 受控勾选；Group 契约同 RadioGroup（M7） |
+| `Field` / `Form` | 表单组装层：标题/必填/错误/提示 + content 插槽；Form 排列 Field + 提交区（footer 插槽可覆盖）；校验框架延后（M7） |
 | `Combobox` | 输入过滤 + 候选；Enter 取首个 |
 | `ColorPicker` | 预设色板 v1 |
 | `DatePicker` | 月视图网格；Zeller 同余推星期（无 Date/strftime 依赖）；游标受控 |
 | `Tabs` / `Accordion` | 受控 active / open |
 | `Dialog` + `Alert` / `Confirm` / `Prompt` | 遮罩模态；Esc 走 window_key |
 | `Toast` | msg/kind；duration_ms 自动消失（L1 auto_dismiss）；动作按钮；堆叠由消费者 map |
+| `Notification` | 标题+正文+kind+关闭钮+动作；duration_ms 自动消失；角落堆叠由消费者 map（M7） |
 | `Progress` / `Spinner` / `Badge` / `EmptyState` | 反馈件 |
-| `Table` | 列定义 + 行哈希（symbol/string 键兼容）+ 选中 + 行点击 |
+| `Table` | 列定义 + 行哈希（symbol/string 键兼容）+ 选中 + 行点击；**受控列排序**（`sort:` Signal + 列 `sortable:`，on_sort 可接管）+ `height:` 滚动容器吸顶表头（M7） |
+| `Tooltip` | 受控文字提示：CSS 锚定四向 placement（top/bottom/left/right）；on_hover 透传布线（M7） |
 | `List` | **窗口化虚拟滚动**（overscan；scroll_top 信号在内容块内读，F7） |
 | `Tree` | 受控 expanded；递归渲染；缩进/箭头 |
 | `KV` / `Breadcrumb` / `Pagination` / `Toolbar` / `StatusBar` / `Icon` | 展示与布局件 |
@@ -149,7 +168,28 @@ WindowManager z 序表、demo toasts（`push_bounded` 顺带解决无上限堆�
 | M4 | 焦点(tabindex/autofocus)/hover/dblclick/wheel/scroll/数据拖放/WindowManager/Taskbar/吸附 | ✅ 主体（全键盘遍历与快捷键注册表仍欠） |
 | M5 | 主题 token（CSS 变量表、b- 前缀统一迁移、暗/亮密度切换） | ☐ demo.html 已全量 b-* 化可作底稿 |
 | M6 | SSR 快照进 CI / CanvasRenderer 适配评估 | ☐ |
+| M7 | 对表主流库的缺口补齐（见 §4.1） | ◐ 原子件/表单组装层/Tooltip/Notification/Table 排序吸顶 ✅；布局件与小件 ☐ |
 | M-WM+ | 窗口吸附实时预览、热点重入 edge case、快捷键注册表（`Beryl.hotkey`）、数据拖放跨面板示例 | ☐ |
+
+### 4.1 · M7 · 对表主流库的缺口补齐（v0.4）
+
+对表 AntD / MUI / Element / Mantine 组件清单盘点（2026-09）：beryl 中层控件
+（下拉系/弹层系/Table/Tree/虚拟滚动 List/窗口管理）已不落下风，缺口集中在
+四块——**原子件未组件化、表单组装层缺失、展示反馈小件不全、桌面特色件未做**。
+按 rubyworld dogfood 价值排序：
+
+| # | 项 | 内容 | 状态 |
+|---|---|---|---|
+| 1 | 原子件 | `Button`（kind/size/icon/loading/disabled，bool\|Signal 两可）· `ButtonGroup` · `Input`（前后缀/清空/错误态/禁用）· `Checkbox` · `CheckboxGroup` | ✅ |
+| 2 | 表单组装层 | `Field`（标题/必填/错误/提示 + content 插槽）· `Form`（Field 排列 + 提交区，footer 插槽可覆盖）。规则校验框架 ☐：error 文本先由消费者算好传入 | ✅（校验 ☐） |
+| 3 | 覆盖层/反馈 | `Tooltip`（受控显隐，CSS 锚定四向 placement，on_hover 透传）· `Notification`（标题+正文+关闭+动作，角落堆叠仍归消费者） | ✅ |
+| 4 | Table 增强 | 受控列排序（`sort:` Signal，列声明 `sortable:`；内存排序 + `on_sort` 外部排序两可）· `height:` 滚动容器 + 吸顶表头。列宽拖拽 ☐：drag 原语只作用于节点自身尺寸，需 L1 增量事件原语 | ◐ |
+| 5 | 布局/桌面件 | `Divider`（水平嵌字/竖直）✅；SplitPane（drag 原语可拼）· Drawer · ScrollArea · 命令面板（⌘K，Combobox+Menu 可拼）☐ | ◐ |
+| 6 | 其余小件 | `Tag`（kind 色板/closable/checkable 受控）✅；Card · Avatar · Skeleton · Result · Popconfirm · Upload · TimePicker/范围选择 · Rate · Cascader ☐ | ◐ |
+| 7 | 体系 | M5 主题 token · ARIA role/属性 · Dialog 焦点陷阱 · `Beryl.hotkey`（M-WM+ 已列） | ☐ |
+
+约定：新组件一律遵守库法则（F1-F9）；Button/Field 的文案 prop 叫 `text`/`title`
+（不得叫 `label`，F3 遮蔽教训）；bool|Signal 两可的控件 prop 用 `Beryl.flag` 归一。
 
 ## 5. 事件原语清单
 
@@ -166,7 +206,7 @@ WindowManager z 序表、demo toasts（`push_bounded` 顺带解决无上限堆�
 
 1. **单元（纯 CRuby）**：props 契约、渲染断言（`Citrine.render` → StringRenderer 输出）、
    插槽语义、WindowManager 几何/吸附/clamp 纯逻辑、Overlay 定位算法。
-   当前 79 项（`bundle exec rake`）。
+   当前 126 项（`bundle exec rake`）。
 2. **集成**：rubyworld 冒烟 + 浏览器 E2E 作为唯一交互验收场
    （v0.2 已在浏览器逐项验证：Select 开合选中、MenuBar 下拉、Dialog、
    双击最大化/还原、chrome 按钮、任务栏最小化/还原、Toast）。

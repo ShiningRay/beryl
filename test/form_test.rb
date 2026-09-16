@@ -163,6 +163,88 @@ class FormTest < Minitest::Test
     assert_equal [2026, 2], dp.shown_month
   end
 
+  # ── Input（M7）──────────────────────────────────────
+
+  def test_input_renders_prefix_placeholder
+    sig = Citrine::Signal.new('hi')
+    html = render(Beryl::Input.new(value: sig, placeholder: '写点…', prefix: '✎'))
+    assert_includes html, 'b-input'
+    assert_includes html, '✎'
+    assert_includes html, '写点…'
+  end
+
+  def test_input_clear_button_only_with_value
+    sig = Citrine::Signal.new('')
+    refute_includes render(Beryl::Input.new(value: sig, clearable: true)), 'b-input-clear'
+    sig.set('x')
+    assert_includes render(Beryl::Input.new(value: sig, clearable: true)), 'b-input-clear'
+  end
+
+  def test_input_error_state_and_disabled_signal
+    assert_includes render(Beryl::Input.new(value: Citrine::Signal.new(''), error: true)), 'is-error'
+    sig = Citrine::Signal.new(false)
+    input = Beryl::Input.new(value: Citrine::Signal.new(''), disabled: sig)
+    refute input.disabled?
+    sig.set(true)
+    assert input.disabled?
+  end
+
+  # ── Checkbox（M7）───────────────────────────────────
+
+  def test_checkbox_checked_state_and_toggle
+    sig = Citrine::Signal.new(false)
+    got = nil
+    cb = Beryl::Checkbox.new(value: sig, text: '同意', on_change: ->(v) { got = v })
+    refute_includes render(cb), 'is-checked'
+    cb.toggle
+    assert_equal true, got
+    assert_includes render(Beryl::Checkbox.new(value: Citrine::Signal.new(true), text: '同意')), 'is-checked'
+  end
+
+  def test_checkbox_group_toggles_membership
+    sig = Citrine::Signal.new([:red])
+    got = nil
+    grp = Beryl::CheckboxGroup.new(options: [['红', :red], ['蓝', :blue]],
+                                   value: sig, on_change: ->(v) { sig.set(v); got = v })
+    html = render(grp)
+    assert_includes html, '红'
+    assert_includes html, 'is-checked'
+    grp.toggle(:blue)
+    assert_equal [:red, :blue], got
+    grp.toggle(:red)
+    assert_equal [:blue], got
+  end
+
+  # ── Field / Form（M7）───────────────────────────────
+
+  def test_field_layout_title_required_error_hint
+    html = render(Beryl::Field.new(title: '备注', required: true,
+                                   error: '必填项', hint: '不超过 10 字',
+                                   content: -> {
+                                     Beryl::Input.new(value: Citrine::Signal.new('')).view
+                                   }))
+    assert_includes html, 'b-field-title'
+    assert_includes html, 'b-field-req'
+    assert_includes html, '必填项'
+    assert_includes html, 'b-field-hint'
+    assert_includes html, 'b-input'
+    assert_includes html, 'has-error'
+  end
+
+  def test_form_default_submit_and_footer_override
+    html = render(Beryl::Form.new(on_submit: -> {}, content: -> {
+      Beryl::Field.new(title: '字段区',
+                       content: -> { Beryl::Input.new(value: Citrine::Signal.new('')).view }).view
+    }))
+    assert_includes html, 'b-btn-primary'
+    assert_includes html, '提交'
+    assert_includes html, 'b-field'
+
+    html = render(Beryl::Form.new(footer: -> { '自定义底部' }, content: -> {}))
+    assert_includes html, '自定义底部'
+    refute_includes html, 'b-btn-primary'
+  end
+
   def test_prop_contract
     assert_raises(ArgumentError) { Beryl::Select.new(options: OPTS, value: Citrine::Signal.new(:ruby), bogus: 1) }
   end

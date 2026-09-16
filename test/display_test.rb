@@ -141,6 +141,20 @@ class DisplayTest < Minitest::Test
 
   # ── Toolbar / StatusBar / Icon ────────────────────────
 
+  # ── Divider（M7）────────────────────────────────────
+
+  def test_divider_horizontal_with_text
+    html = render(Beryl::Divider.new(text: '或'))
+    assert_includes html, 'b-divider'
+    assert_includes html, 'b-divider-line'
+    assert_includes html, '或'
+  end
+
+  def test_divider_vertical
+    html = render(Beryl::Divider.new(orientation: :vertical))
+    assert_includes html, 'is-vertical'
+  end
+
   def test_toolbar_and_statusbar_slots
     html = render(SlotsHost.new)
     assert_includes html, 'b-toolbar'
@@ -153,6 +167,60 @@ class DisplayTest < Minitest::Test
   def test_icon_glyphs
     assert_equal '✕', Beryl::Icon[:close]
     assert_equal 'x_wing', Beryl::Icon[:x_wing]   # 未知名字原样返回
+  end
+
+  # ── Table 排序 / 吸顶（M7）──────────────────────────
+
+  SORT_COLS = [{ key: :name, label: '名称', sortable: true },
+               { key: :size, label: '大小', align: :right }]
+
+  def test_table_sortable_header_marks_active_and_arrow
+    sort = Citrine::Signal.new({ key: :name, dir: :asc })
+    html = render(Beryl::Table.new(columns: SORT_COLS,
+                                   rows: [{ name: 'b' }, { name: 'a' }], sort: sort))
+    assert_includes html, 'is-sortable'
+    assert_includes html, 'is-sorted'
+    assert_includes html, '↑'
+    refute_match(/大小[^\n]*↑/, html)   # 箭头只挂活动列
+  end
+
+  def test_table_sort_toggles_and_sorts_rows_in_memory
+    sort = Citrine::Signal.new({ key: :name, dir: :asc })
+    table = Beryl::Table.new(columns: SORT_COLS, rows: [{ name: 'b' }, { name: 'a' }], sort: sort)
+    assert_equal %w[a b], table.display_rows.map { |r| r[:name] }
+    sort.set({ key: :name, dir: :desc })
+    assert_equal %w[b a], table.display_rows.map { |r| r[:name] }
+    table.toggle_sort(SORT_COLS.first)     # desc → 点一下回 asc
+    assert_equal :asc, sort.get[:dir]
+  end
+
+  def test_table_sort_with_on_sort_delegates_ordering
+    got = nil
+    rows = [{ name: 'b' }, { name: 'a' }]
+    table = Beryl::Table.new(columns: SORT_COLS, rows: rows,
+                             sort: Citrine::Signal.new({ key: :name, dir: :asc }),
+                             on_sort: ->(s) { got = s })
+    assert_equal rows, table.display_rows  # 外部排序：行序不动，只回调
+    table.toggle_sort(SORT_COLS.first)
+    assert_equal({ key: :name, dir: :desc }, got)
+  end
+
+  def test_table_height_makes_scroll_container
+    html = render(Beryl::Table.new(columns: COLS, rows: [{ name: 'x' }], height: 120))
+    assert_includes html, 'height:120px'
+    assert_includes html, 'overflow:auto'
+  end
+
+  def test_table_sort_by_custom_key
+    cols = [{ key: :size, label: '大小', sortable: true,
+              sort_by: ->(r) { r[:bytes] } }]
+    rows = [{ size: '12K', bytes: 12_288 }, { size: '8.1K', bytes: 8_294 }]
+    sort = Citrine::Signal.new({ key: :size, dir: :asc })
+    table = Beryl::Table.new(columns: cols, rows: rows, sort: sort)
+    # 字符串序会排成 12K < 8.1K；按字节数才是 8.1K < 12K
+    assert_equal ['8.1K', '12K'], table.display_rows.map { |r| r[:size] }
+    sort.set({ key: :size, dir: :desc })
+    assert_equal ['12K', '8.1K'], table.display_rows.map { |r| r[:size] }
   end
 end
 

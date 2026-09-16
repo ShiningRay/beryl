@@ -8,6 +8,7 @@
 # 并为 Beryl::Timer 注入 setTimeout 后端。
 require 'citrine'
 require_relative 'beryl/support'
+require_relative 'beryl/button'
 require_relative 'beryl/overlay'
 require_relative 'beryl/menu'
 require_relative 'beryl/form'

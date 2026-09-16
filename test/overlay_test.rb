@@ -55,6 +55,40 @@ class OverlayTest < Minitest::Test
     assert_includes html, 'left:330px'   # 500 - 170
     assert_includes html, 'top:300px'    # 400 - 100
   end
+
+  # ── Tooltip（M7）────────────────────────────────────
+
+  def render(component)
+    Citrine.render(component)
+  end
+
+  def test_tooltip_anchor_always_shown_bubble_only_when_open
+    open = Citrine::Signal.new(false)
+    tip = Beryl::Tooltip.new(text: '提示文字', anchor: '锚内容', open: open)
+    html = render(tip)
+    assert_includes html, 'b-tooltip-wrap'
+    assert_includes html, '锚内容'
+    refute_includes html, '提示文字'
+    open.set(true)
+    html = render(tip)
+    assert_includes html, '提示文字'
+    assert_includes html, 'is-top'         # 缺省 placement
+  end
+
+  def test_tooltip_placement_class
+    html = render(Beryl::Tooltip.new(text: 't', anchor: 'a',
+                                     open: Citrine::Signal.new(true), placement: :left))
+    assert_includes html, 'is-left'
+  end
+
+  def test_tooltip_on_hover_wires_open
+    open = Citrine::Signal.new(false)
+    tip = Beryl::Tooltip.new(text: 't', anchor: 'a', open: open,
+                             on_hover: ->(v) { open.set(v) })
+    render(tip)
+    tip.set_open(true)
+    assert open.get                        # 受控通道：内部态写穿透到 Signal
+  end
 end
 
 class PopoverHost < Citrine::Component

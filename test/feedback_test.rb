@@ -54,6 +54,57 @@ class FeedbackTest < Minitest::Test
     assert_includes empty, '暂无数据'
     assert_includes empty, 'EMPTY-ACTION'
   end
+
+  # ── Notification（M7）───────────────────────────────
+
+  def test_notification_title_msg_kind_and_close
+    html = render(Beryl::Notification.new(title: '构建完成', msg: '耗时 3s', kind: 'success',
+                                          on_close: -> {}))
+    assert_includes html, 'b-notification success'
+    assert_includes html, '构建完成'
+    assert_includes html, '耗时 3s'
+    assert_includes html, 'b-notification-x'
+  end
+
+  def test_notification_action_and_style_merge
+    html = render(Beryl::Notification.new(title: 'n', action_label: '查看',
+                                          style: { top: '46px' }))
+    assert_includes html, 'b-notification-action'
+    assert_includes html, '查看'
+    assert_includes html, 'top:46px'
+    assert_includes html, 'z-index:4300'   # 缺省 z 序保留，消费者 style 只叠加
+  end
+
+  def test_notification_without_optional_parts
+    html = render(Beryl::Notification.new(title: '纯标题'))
+    refute_includes html, 'b-notification-x'
+    refute_includes html, 'b-notification-action'
+  end
+
+  def test_badge_css_class_passthrough
+    html = render(Beryl::Badge.new(text: '持', css_class: 'badge-hold'))
+    assert_includes html, 'b-badge badge-hold'
+  end
+
+  # ── Tag（M7）────────────────────────────────────────
+
+  def test_tag_kind_and_close
+    html = render(Beryl::Tag.new(text: 'Ruby', kind: 'info', closable: true, on_close: -> {}))
+    assert_includes html, 'b-tag b-tag-info'
+    assert_includes html, 'Ruby'
+    assert_includes html, 'b-tag-x'
+  end
+
+  def test_tag_checkable_controlled_toggle
+    sig = Citrine::Signal.new(false)
+    got = nil
+    tag = Beryl::Tag.new(text: 't', checkable: true, checked: sig, on_toggle: ->(v) { got = v })
+    refute_includes render(tag), 'is-checked'
+    tag.toggle
+    assert_equal true, got
+    sig.set(true)
+    assert_includes render(tag), 'is-checked'
+  end
 end
 
 class EmptyHost < Citrine::Component

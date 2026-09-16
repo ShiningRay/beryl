@@ -250,6 +250,117 @@ module Beryl
     end
   end
 
+  # L2 · 通用单行输入（受控，M7）。value 是 Signal（每键更新）；
+  # 前后缀字形、清空钮、错误态、禁用。disabled/error 接受明值或 Signal（Beryl.flag）。
+  # SearchInput/NumberInput 是它的场景化近亲（保留，暂不迁移）。
+  class Input < Citrine::Component
+    prop :value            # Signal<String>
+    prop :placeholder, type: String, default: ''
+    prop :prefix           # String 前缀字形，可空
+    prop :suffix           # String 后缀字形，可空
+    prop :clearable, default: false  # 有值时显示 ✕
+    prop :disabled         # bool | Signal，可空
+    prop :error            # bool | Signal，可空 → is-error
+    prop :width            # Numeric px，可空（可空 prop 不带 type，F3）
+    prop :on_enter
+
+    def view
+      row(css_class: wrap_class, gap: 6, style: wrap_style) do
+        box(css_class: 'b-input-glyph') { prefix } if prefix
+        ti = { value: value, placeholder: placeholder, on_enter: on_enter,
+               css_class: 'b-input-inner' }
+        ti[:disabled] = true if disabled?
+        text_input(**ti)
+        if clearable && value.get.to_s != ''
+          box(css_class: 'b-input-clear', on_click: ->(_e) { value.set('') }) { '✕' }
+        end
+        box(css_class: 'b-input-glyph') { suffix } if suffix
+      end
+    end
+
+    def wrap_class
+      parts = ['b-input']
+      parts << 'is-error' if Beryl.flag(error)
+      parts << 'is-disabled' if disabled?
+      parts.join(' ')
+    end
+
+    def wrap_style
+      width ? { width: "#{width}px" } : nil
+    end
+
+    def disabled?
+      !!Beryl.flag(disabled)
+    end
+  end
+
+  # L2 · 复选框（受控，M7）。value Signal truthy = 勾选；独立于 Switch 的
+  # 二元勾选件（表单语义：勾选 ≠ 开关）。disabled 接受明值或 Signal。
+  class Checkbox < Citrine::Component
+    prop :value            # Signal（truthy = 勾选）
+    prop :text             # String，可空
+    prop :on_change
+    prop :disabled         # bool | Signal，可空
+
+    def view
+      row(css_class: cb_class, gap: 6, on_click: enabled? ? :toggle : nil) do
+        box(css_class: 'b-checkbox-box') { '✓' if value.get }
+        label { text.to_s } if text
+      end
+    end
+
+    def cb_class
+      parts = ['b-checkbox']
+      parts << 'is-checked' if value.get
+      parts << 'is-disabled' if disabled?
+      parts.join(' ')
+    end
+
+    def toggle
+      on_change&.call(!value.get)
+    end
+
+    def disabled?
+      !!Beryl.flag(disabled)
+    end
+
+    def enabled?
+      !disabled?
+    end
+  end
+
+  # L2 · 复选组（受控，M7）。value Signal<Array>；契约同 RadioGroup。
+  class CheckboxGroup < Citrine::Component
+    prop :options
+    prop :value            # Signal<Array>
+    prop :on_change
+    prop :direction, default: :column
+
+    def view
+      box(css_class: 'b-checkboxgroup', direction: direction, gap: 6) do
+        options.each do |o|
+          v = Beryl.option_value(o)
+          on = selected.include?(v)
+          row(css_class: on ? 'b-checkbox is-checked' : 'b-checkbox', gap: 6,
+              on_click: ->(_e) { toggle(v) }) do
+            box(css_class: 'b-checkbox-box') { '✓' if on }
+            label { Beryl.option_label(o).to_s }
+          end
+        end
+      end
+    end
+
+    def selected
+      value.get || []
+    end
+
+    def toggle(v)
+      cur = selected.dup
+      cur.include?(v) ? cur.delete(v) : cur << v
+      on_change&.call(cur)
+    end
+  end
+
   # L2 · 自动完成：输入即过滤（Signal 驱动），候选列表 CSS 锚定，
   # Enter 取第一个、Esc 收起。开合受控（open Signal），理由同 Select。
   class Combobox < Citrine::Component
@@ -398,6 +509,54 @@ module Beryl
       mm = m < 3 ? m + 12 : m
       h = (1 + (13 * (mm + 1)) / 26 + yy % 100 + (yy % 100) / 4 + yy / 400 + 5 * (yy / 100)) % 7
       (h + 6) % 7
+    end
+  end
+
+  # L2 · 表单字段组装层（M7）：标题/必填标记/错误/提示 + 控件插槽。
+  # 校验规则框架延后：error 文本由消费者（Store/表单逻辑）算好传入，
+  # Field 只负责布局与错误态呈现。
+  class Field < Citrine::Component
+    prop :title            # String，可空
+    prop :required, default: false
+    prop :error            # String，可空（有值即错误态）
+    prop :hint             # String，可空
+    prop :content          # Proc 插槽（F2）：控件
+
+    def view
+      stack(css_class: error ? 'b-field has-error' : 'b-field', gap: 4) do
+        if title
+          row(css_class: 'b-field-title', gap: 4) do
+            label { title.to_s }
+            box(css_class: 'b-field-req') { '*' } if required
+          end
+        end
+        content.call if content
+        box(css_class: 'b-field-error') { error } if error
+        box(css_class: 'b-field-hint') { hint } if hint
+      end
+    end
+  end
+
+  # L2 · 表单容器（M7）：Field 纵向排列 + 提交区。
+  # footer 插槽可覆盖缺省的主按钮；on_submit 挂在主按钮的 on_click 上。
+  # 注意 `form` 是 citrine 元素词表（ELEMENT_TAGS）——本类用 stack 语义足够。
+  class Form < Citrine::Component
+    prop :content          # Proc 插槽：Field 列表
+    prop :submit_text, type: String, default: '提交'
+    prop :on_submit
+    prop :footer           # Proc 插槽，可空
+
+    def view
+      stack(css_class: 'b-form', gap: 12) do
+        content.call if content
+        stack(css_class: 'b-form-foot', gap: 6) do
+          if footer
+            footer.call
+          else
+            Button.new(text: submit_text, kind: :primary, on_click: on_submit).view
+          end
+        end
+      end
     end
   end
 end

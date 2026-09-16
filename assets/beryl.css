@@ -1,56 +1,24 @@
-<!doctype html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<title>Beryl Demo</title>
-<style>
-  :root { --bg: #0b0e14; --panel: #11151f; --panel2: #151b28; --line: #232b3b;
-          --fg: #c9d4e6; --dim: #7d8aa5; --accent: #4f8cff; }
-  body { margin: 0; background: var(--bg); color: var(--fg); font: 13px/1.45 -apple-system, "PingFang SC", sans-serif; height: 100vh; }
-  #app { height: 100vh; }
+/* Beryl 组件样式参考表（v0.4 · M7）
+ *
+ * beryl 不自带样式注入：这份是 examples/demo.html 中 b-* 组件样式的抽取版，
+ * 供消费仓拷贝/改写。约定（market-terminal 与 sheets 的做法）：
+ *  - 色值改写为消费仓自己的设计令牌（var(--x)），令牌机器守卫才守得住；
+ *  - 只拷真正用到的组件段；chip 之类"组件类 + 消费者类"并存时，
+ *    消费者规则放后面（同优先级后者胜）。
+ * 同步来源：examples/demo.html 的 <style>（L3 窗口/菜单段除外）。
+ */
+
+:root { --bg: #0b0e14; --panel: #11151f; --panel2: #151b28; --line: #232b3b;
+  --fg: #c9d4e6; --dim: #7d8aa5; --accent: #4f8cff; }
   button { background: var(--panel2); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 12px; cursor: pointer; font: inherit; }
   button:hover { border-color: var(--accent); }
-  p { margin: 0; }
-
   /* ── 滚动条：暗色主题细滚动条（WebKit/Blink 走伪元素，Firefox 走 scrollbar-*）── */
-  * { scrollbar-width: thin; scrollbar-color: #2a3348 transparent; }
-  ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #2a3348; border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: #3a4660; }
-  ::-webkit-scrollbar-corner { background: transparent; }
-
   /* 几何回写以 offsetWidth/Height 为准（含边框），面板必须 border-box，否则
-     每次拖拽/点击回写都会让窗口「呼吸」变大（1px 边框 × 2） */
-  *, *::before, *::after { box-sizing: border-box; }
-
+  每次拖拽/点击回写都会让窗口「呼吸」变大（1px 边框 × 2） */
   /* ── WindowFrame（沿用旧类名 + 状态类）────────────────── */
-  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; display: flex; overflow: hidden; box-shadow: 0 10px 30px #0006; }
-  .panel.is-active { border-color: #35507e; }
-  .panel.is-inactive .panel-head { opacity: .55; }
-  .panel-head { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--panel2); border-bottom: 1px solid var(--line); cursor: grab; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
-  .wclass { color: var(--dim); font-size: 11px; }
-  .panel-body { flex: 1; overflow: auto; padding: 8px; }
-
   /* 八向缩放手柄 */
-  .rs-handle { position: absolute; z-index: 10; }
-  .rs-n { top: -3px; left: 8px; right: 8px; height: 6px; cursor: n-resize; }
-  .rs-s { bottom: -3px; left: 8px; right: 8px; height: 6px; cursor: s-resize; }
-  .rs-e { right: -3px; top: 8px; bottom: 8px; width: 6px; cursor: e-resize; }
-  .rs-w { left: -3px; top: 8px; bottom: 8px; width: 6px; cursor: w-resize; }
-  .rs-ne { top: -3px; right: -3px; width: 12px; height: 12px; cursor: ne-resize; }
-  .rs-nw { top: -3px; left: -3px; width: 12px; height: 12px; cursor: nw-resize; }
-  .rs-se { bottom: -3px; right: -3px; width: 12px; height: 12px; cursor: se-resize; }
-  .rs-sw { bottom: -3px; left: -3px; width: 12px; height: 12px; cursor: sw-resize; }
-
   /* 窗口 chrome 控制钮 */
-  .b-win-controls { display: flex; gap: 4px; margin-left: 8px; }
-  .b-win-btn { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 5px; color: var(--dim); font-size: 11px; cursor: pointer; }
-  .b-win-btn:hover { background: #ffffff14; color: var(--fg); }
-
   /* ── 菜单 ─────────────────────────────────────────────── */
-  .menu-overlay { position: fixed; inset: 0; z-index: 2900; }
   .ctx-menu { position: fixed; z-index: 3000; min-width: 170px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 4px; display: flex; flex-direction: column; outline: none; }
   .menu-item { padding: 5px 12px; border-radius: 5px; cursor: pointer; position: relative; }
   .menu-item:hover, .menu-item.is-active { background: #4f8cff26; }
@@ -60,9 +28,6 @@
   .b-menu-shortcut { margin-left: auto; color: var(--dim); font-size: 11px; }
   .has-submenu > .ctx-menu, .has-submenu > .b-submenu { position: absolute; left: 100%; top: -4px; }
   .has-submenu > .b-submenu { min-width: 170px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 4px; display: flex; flex-direction: column; z-index: 10; }
-  .b-menubar { position: fixed; top: 0; left: 0; right: 0; padding: 4px 8px; background: var(--panel); border-bottom: 1px solid var(--line); z-index: 2000; }
-  .b-menubar-item.is-open { background: #4f8cff26; }
-
   /* ── 浮层 / 对话框 ────────────────────────────────────── */
   .b-popover { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 6px; }
   .b-dialog-overlay { position: fixed; inset: 0; background: #0009; z-index: 3100; display: flex; align-items: center; justify-content: center; }
@@ -73,7 +38,6 @@
   .b-dialog-head { align-items: center; }
   .b-dialog-foot { justify-content: flex-end; }
   .b-btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-
   /* ── 表单 ─────────────────────────────────────────────── */
   .b-select { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 4px 12px; cursor: pointer; min-width: 96px; text-align: left; }
   .b-select.is-open { border-color: var(--accent); }
@@ -109,14 +73,12 @@
   .b-dp-day { border-radius: 6px; cursor: pointer; }
   .b-dp-day:hover { background: #ffffff14; }
   .b-dp-day.is-active { background: var(--accent); color: #fff; }
-
   /* ── Tabs / Accordion ─────────────────────────────────── */
   .b-tab { border-radius: 6px 6px 0 0; border-bottom: none; }
   .b-tab.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
   .b-tab-body { border: 1px solid var(--line); border-radius: 0 8px 8px 8px; background: var(--panel2); }
   .b-acc-head { padding: 6px 8px; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; cursor: pointer; align-items: center; gap: 6px; }
   .b-acc-body { padding: 8px 10px; }
-
   /* ── 展示 ─────────────────────────────────────────────── */
   .b-table { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
   .b-table-head { background: var(--panel2); }
@@ -144,7 +106,6 @@
   .b-page-ellipsis { color: var(--dim); align-self: center; }
   .b-toolbar { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; }
   .b-statusbar { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; font-size: 12px; color: var(--dim); }
-
   /* ── 反馈 ─────────────────────────────────────────────── */
   .b-toast { position: fixed; right: 16px; bottom: 56px; background: #161b28; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 8px; padding: 8px 14px; z-index: 4200; cursor: pointer; }
   .b-toast.error { border-left-color: #f85149; }
@@ -164,9 +125,7 @@
   .b-badge-error { background: #f8514933; color: #ff9d97; }
   .b-empty { align-items: center; color: var(--dim); padding: 12px; }
   .b-empty-icon { font-size: 24px; }
-
   /* ── 任务栏 / tooltip ─────────────────────────────────── */
-  .b-taskbar { background: var(--panel); border-top: 1px solid var(--line); align-items: center; padding: 0 8px; }
   .b-taskbtn.is-active { border-color: var(--accent); color: #fff; }
   .b-taskbtn.is-minimized { opacity: .55; }
   /* ── M7 补齐件：Button / Input / Checkbox / Field / Tooltip / Notification ── */
@@ -225,10 +184,3 @@
   .b-table-th.is-sortable { cursor: pointer; user-select: none; }
   .b-table-th.is-sortable:hover { color: var(--fg); }
   .b-table-head { position: sticky; top: 0; z-index: 1; }
-</style>
-</head>
-<body>
-<div id="app"></div>
-<script src="demo.js"></script>
-</body>
-</html>
