@@ -52,6 +52,16 @@ module Beryl
     v.respond_to?(:get) ? v.get : v
   end
 
+  # 选项契约归一：接受 [label, value] 数组或 { label:, value: } 哈希
+  # （Select/MultiSelect/RadioGroup/CheckboxGroup 等公共数据契约）
+  def self.option_label(opt)
+    opt.is_a?(Hash) ? Beryl.pick(opt, :label) : opt[0]
+  end
+
+  def self.option_value(opt)
+    opt.is_a?(Hash) ? Beryl.pick(opt, :value) : opt[1]
+  end
+
   # 拖拽几何核心（纯 CRuby，F5）：「mousedown 基准几何 + 屏幕指针位移」→ 手势几何。
   # 数学从 L1 setup_drag 提出，CRuby 可直接回归测试。
   # drag_scale（世界缩放倍率，如 ZUI 相机 zoom）：offsetLeft/Top 是布局（世界）

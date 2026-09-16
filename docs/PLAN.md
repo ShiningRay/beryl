@@ -218,18 +218,27 @@ WindowManager z 序表、demo toasts（`push_bounded` 顺带解决无上限堆�
 
 ```
 beryl/
-  lib/beryl.rb            入口（Opal 守卫加载 renderer）
-  lib/beryl/support.rb    Timer / DragBus / next_z / pick
-  lib/beryl/overlay.rb    Overlay 定位算法 + Popover
-  lib/beryl/menu.rb       Menu + MenuBar
-  lib/beryl/form.rb       Select/MultiSelect/RadioGroup/Switch/Slider/NumberInput/
-                          SearchInput/Combobox/ColorPicker/DatePicker
-  lib/beryl/tabs.rb       Tabs + Accordion
-  lib/beryl/dialog.rb     Dialog + Alert/Confirm/Prompt
-  lib/beryl/feedback.rb   Toast/Progress/Spinner/Badge/EmptyState
-  lib/beryl/display.rb    Table/List/Tree/KV/Breadcrumb/Pagination/Toolbar/StatusBar/Icon
-  lib/beryl/window.rb     WindowFrame + WindowManager + Taskbar
+  lib/beryl.rb            入口（显式 require 全部组件；Opal 守卫加载 renderer）
+  lib/beryl/support.rb    Timer / DragBus / DragGeometry / next_z / pick / flag /
+                          option 契约助手
+  lib/beryl/overlay.rb    Overlay 定位算法（纯几何；Menu clamp / Popover 共用）
   lib/beryl/renderer.rb   L1 原语（仅 Opal；注入 Timer 后端）
+  lib/beryl/<组件>.rb     一个组件一个文件（snake_case 对应类名）：
+                          动作      button · button_group
+                          浮层      popover · tooltip
+                          菜单      menu · menu_bar
+                          表单      select · multi_select · radio_group · switch ·
+                                    slider · number_input · search_input · input ·
+                                    checkbox · checkbox_group · combobox ·
+                                    color_picker · date_picker · field · form
+                          导航展示  tabs · accordion · table · list · tree · kv ·
+                                    breadcrumb · pagination · divider · toolbar ·
+                                    status_bar · icon
+                          反馈弹层  dialog · alert · confirm · prompt · toast ·
+                                    notification · progress · spinner · badge ·
+                                    tag · empty_state
+                          桌面外壳  window_frame · window_manager · taskbar
+  assets/beryl.css        组件样式参考表（demo 抽取版，消费仓按令牌改写）
   docs/PLAN.md            本文档
   examples/               演示页（demo.rb + demo.html，全组件画廊）
   test/                   minitest（按域分文件）

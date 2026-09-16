@@ -15,7 +15,7 @@ Gem::Specification.new do |spec|
   spec.license = 'MIT'
   spec.required_ruby_version = '>= 2.7'
 
-  spec.files = Dir['lib/**/*.rb', 'docs/*.md', 'README.md', 'LICENSE']
+  spec.files = Dir['lib/**/*.rb', 'assets/*.css', 'docs/*.md', 'README.md', 'LICENSE']
   # citrine 尚未发布 gem：本地经 path / Opal -I 引用，发布后切换为正式依赖
   # spec.add_runtime_dependency 'citrine', '>= 0.1'
 

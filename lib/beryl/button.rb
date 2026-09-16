@@ -1,9 +1,6 @@
 # frozen_string_literal: true
 
 module Beryl
-  # L2 · 按钮：变体/尺寸/加载/禁用的统一契约（M7 前各件各自裸写
-  # button+css_class，b-btn 语义散落在 Dialog/Pagination/Tabs 里，新代码一律走这里）。
-  # text 与 content 插槽二选一；disabled/loading 接受明值或 Signal（Beryl.flag 归一）。
   class Button < Citrine::Component
     prop :text            # String，可空（prop 不得叫 label——会遮住 label 元素方法，F3）
     prop :content         # Proc 插槽（F2），可空
@@ -77,16 +74,6 @@ module Beryl
     # 禁用/加载中不挂 on_click（布尔 disabled 属性之外的双保险）
     def clickable?
       !(disabled? || loading?)
-    end
-  end
-
-  # L2 · 按钮组：横向排列若干 Button 的间距容器（内容归消费者，F2 插槽）。
-  class ButtonGroup < Citrine::Component
-    prop :content         # Proc 插槽
-    prop :gap, type: Numeric, default: 6
-
-    def view
-      row(css_class: 'b-btn-group', gap: gap) { content&.call }
     end
   end
 end

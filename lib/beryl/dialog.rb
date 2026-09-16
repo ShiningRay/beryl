@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 module Beryl
-  # L2 · 模态对话框：遮罩 + 标题栏 + 内容插槽 + 确认/取消页脚。
-  # 消费者用自身 Signal 控制显隐（条件渲染）；Esc 关闭走 window 级键盘。
   class Dialog < Citrine::Component
     prop :title, type: String, default: ''
     prop :content          # Proc 插槽
@@ -45,56 +43,6 @@ module Beryl
 
     def backdrop(_e)
       on_cancel&.call if dismiss_on_backdrop
-    end
-  end
-
-  # L2 · 对话框三件套：提示 / 确认 / 输入
-  class Alert < Dialog
-    prop :message, type: String, default: ''
-
-    def view
-      return super if message.empty?
-
-      inner = content || -> { label { message } }
-      Beryl::Dialog.new(title: title, content: inner,
-                        on_confirm: on_confirm, confirm_text: confirm_text,
-                        width: width).view
-    end
-  end
-
-  class Confirm < Dialog
-    prop :message, type: String, default: ''
-
-    def view
-      return super if message.empty?
-
-      inner = content || -> { label { message } }
-      Beryl::Dialog.new(title: title, content: inner,
-                        on_confirm: on_confirm, on_cancel: on_cancel,
-                        confirm_text: confirm_text, cancel_text: cancel_text,
-                        width: width).view
-    end
-  end
-
-  # Prompt 的 input 是 Signal（受控）；确认时把当前值交给 on_confirm
-  class Prompt < Dialog
-    prop :message, type: String, default: ''
-    prop :input            # Signal<String>
-
-    def view
-      return super if message.empty?
-
-      inner = content || lambda {
-        stack(gap: 8) do
-          label { message }
-          text_input(value: input, css_class: 'b-prompt-input')
-        end
-      }
-      Beryl::Dialog.new(title: title, content: inner,
-                        on_confirm: -> { on_confirm&.call(input.get) },
-                        on_cancel: on_cancel,
-                        confirm_text: confirm_text, cancel_text: cancel_text,
-                        width: width).view
     end
   end
 end
