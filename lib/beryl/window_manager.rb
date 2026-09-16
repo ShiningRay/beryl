@@ -21,6 +21,9 @@ module Beryl
       # z 序（末尾 = 最上层），也是注册表成员表；signal_list 让「改集合」本身成为触发点
       @order = Citrine.signal_list([])
       @records = {}
+      # frame(id) 在消费者 view 中通常直接调用 .view，不经过 Component#render；
+      # 缓存实例让节点 owner 在父块重跑时保持不变，避免复用池因 owner 改变而重建整窗。
+      @frames = {}
     end
 
     def viewport=(vp)
@@ -49,6 +52,7 @@ module Beryl
     def close(id)
       assert_outside_effect!(:close)
       @records.delete(id)
+      @frames.delete(id)
       @order.delete(id)
     end
 
@@ -177,7 +181,9 @@ module Beryl
         minimizable: opts.delete(:minimizable) { true },
         maximizable: opts.delete(:maximizable) { true },
       }
-      Beryl::WindowFrame.new(
+      props = {}
+      Beryl::WindowFrame.prop_defs.each { |name, definition| props[name] = definition[:default] }
+      props.merge!(
         title: r.title,
         geometry: { 'px' => g[:x], 'py' => g[:y], 'pw' => g[:w], 'ph' => g[:h] },
         z_index: z(id),
@@ -192,8 +198,18 @@ module Beryl
         on_minimize: -> { toggle_min(id) },
         on_maximize: -> { toggle_max(id) },
         on_close: -> { close(id) },
-        **flags, **opts,
       )
+      props.merge!(flags)
+      props.merge!(opts)
+      props[:frame_key] = id
+      frame = @frames[id]
+      if frame
+        frame.update_props(props)
+      else
+        frame = Beryl::WindowFrame.new(props)
+        @frames[id] = frame
+      end
+      frame
     end
 
     # ── 几何规则 ──────────────────────────────────────────

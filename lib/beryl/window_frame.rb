@@ -32,6 +32,7 @@ module Beryl
     prop :on_body_click
     prop :content          # Proc 插槽：主体内容
     prop :tools            # Proc 插槽：标题栏尾部（如自定义按钮）
+    prop :frame_key        # WindowManager 注入的稳定根节点 key（直接 .view 也可复用）
     prop :shape, default: nil  # 异形窗口：clip-path 值（'polygon(...)'/'circle(50%)' 等）。
                                # 设置后结构变为 .panel-wrap（定位/z 序/drop-shadow 阴影）
                                # 包 .panel（clip-path 裁剪）——box-shadow 会被 clip-path
@@ -46,13 +47,13 @@ module Beryl
       # 异形：外包 .panel-wrap（定位/z 序/阴影），.panel 在包裹层 block 内部 emit——
       # 先建节点再塞 block 会让节点 emit 两次，第二次以 to_s 文本泄漏（F 系踩坑同款）
       if shape
-        box(css_class: "panel-wrap #{css_class}".strip, style: wrap_style,
-            **{ on_front: on_front }.compact) do
+        box(css_class: -> { "panel-wrap #{css_class}".strip }, style: -> { wrap_style },
+            **{ key: frame_key, on_front: on_front }.compact) do
           emit_panel('.panel-wrap', {})
           nil # 块返回值不外泄（emit_panel 返回 Node，泄漏会被渲染成可见文本）
         end
       else
-        emit_panel(nil, { on_front: on_front }.compact)
+        emit_panel(nil, { key: frame_key, on_front: on_front }.compact)
       end
     end
 
@@ -66,8 +67,13 @@ module Beryl
       body_opts = { on_click: on_body_click }.compact
 
       # 类名沿用应用侧既有 CSS（panel/panel-head/...）；b- 前缀 token 化在 M5 主题系统时统一迁移
-      box(css_class: frame_class, direction: :column,
-          style: pane ? shaped_panel_style : frame_style, **frame_opts) do
+      # css_class/style 用响应式 Proc（G-2）：is-active/is-inactive 类与 z_index 随
+      # 激活态翻转。立即求值会让复用池的 same_props? 失配 → 每次 focus 都整树重建
+      # .panel——旧节点脱离文档，拖拽原语的样式跟随降级（mousedown 触发 on_front/focus
+      # 正是拖动未激活窗口的第一步），窗口只在松手时跳到终点；Proc 形式让变化落在
+      # 本节点属性 Effect 上，原地 patch、节点身份保留，拖拽全程跟随。
+      box(css_class: -> { frame_class }, direction: :column,
+          style: -> { pane ? shaped_panel_style : frame_style }, **frame_opts) do
         box(css_class: 'panel-head', **head_opts) do
           box(css_class: 'dot', style: { background: accent })
           label(css_class: 'title', style: { font_weight: 600 }) { title }

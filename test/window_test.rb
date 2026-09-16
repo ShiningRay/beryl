@@ -168,6 +168,25 @@ class WindowTest < Minitest::Test
     assert wm.active?(:a)
   end
 
+  # 未激活窗口的 mousedown 会先 focus，导致宿主 view 重跑并改变 z 序。
+  # WindowManager 必须让同一窗口继续复用原 DOM；否则 setup_drag 持有的旧 pane
+  # 会变成游离节点，mousemove 期间看不到窗口移动，只在 mouseup 落点回写。
+  def test_frame_identity_survives_focus_reorder
+    wm = Beryl::WindowManager.new
+    wm.open(:a, geometry: { x: 0, y: 0, w: 100, h: 80 })
+       .open(:b, geometry: { x: 20, y: 20, w: 100, h: 80 })
+    host = WindowIdentityHost.new(wm)
+    renderer = WindowIdentityRenderer.new
+    root = renderer.mount_component(host, WindowIdentityDom.new)
+    dom_by_id = root.children.to_h { |node| [node.reuse_key, node.dom] }
+
+    wm.focus(:a)
+
+    assert_same dom_by_id[:a], root.children.find { |node| node.reuse_key == :a }.dom
+    assert_same dom_by_id[:b], root.children.find { |node| node.reuse_key == :b }.dom
+    assert_equal [:b, :a], root.children.map(&:reuse_key)
+  end
+
   def test_frame_move_and_close_wiring
     wm = Beryl::WindowManager.new(viewport: VP)
     wm.open(:a, geometry: { x: 0, y: 0, w: 300, h: 200 })
@@ -356,4 +375,67 @@ class DblHost < Citrine::Component
     frame.view
   end
 
+end
+
+# 只用于验证 WindowFrame 的复用身份；Beryl::Renderer 依赖 Opal，CRuby 侧用最小
+# 内存渲染器模拟 DOM 的 append/detach 语义即可覆盖 focus → z 序重排这条路径。
+class WindowIdentityDom
+  attr_reader :children, :style
+  attr_accessor :parent, :class_name, :text
+
+  def initialize
+    @children = []
+    @style = {}
+  end
+end
+
+class WindowIdentityRenderer < Citrine::Renderer
+  private
+
+  def setup_root(root, element)
+    root.dom = element
+  end
+
+  def create_dom(_node)
+    WindowIdentityDom.new
+  end
+
+  def attach(node, parent)
+    parent.dom.children.delete(node.dom)
+    parent.dom.children << node.dom
+    node.dom.parent = parent.dom
+  end
+
+  def detach(node)
+    return unless node.dom.parent
+
+    node.dom.parent.children.delete(node.dom)
+    node.dom.parent = nil
+  end
+
+  def apply_props(node)
+    if node.props.key?(:css_class)
+      css_class = prop_value(node, node.props[:css_class])
+      node.dom.class_name = css_class.is_a?(Array) ? css_class.join(' ') : css_class.to_s
+    end
+    node.dom.style.replace(resolve_style(node))
+  end
+
+  def set_text(node, text)
+    node.text = text
+  end
+end
+
+class WindowIdentityHost < Citrine::Component
+  def initialize(wm)
+    @wm = wm
+    super()
+  end
+
+  def view
+    @wm.windows.each do |id|
+      @wm.frame(id, content: -> { label { id.to_s } }).view
+    end
+    nil
+  end
 end
